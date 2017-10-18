@@ -136,6 +136,10 @@ char * convert_frame_to_char(Frame * frame)
       DSTID_SIZE);
   position += DSTID_SIZE;
   memcpy(&char_buffer[position],
+      &(frame->sameMsg),
+      BOOL_SIZE);
+  position += BOOL_SIZE;
+  memcpy(&char_buffer[position],
       &(frame->seqNum),
       SEQ_SIZE);
   position += SEQ_SIZE;
@@ -144,7 +148,7 @@ char * convert_frame_to_char(Frame * frame)
       FRAME_PAYLOAD_SIZE);
   position += FRAME_PAYLOAD_SIZE;
   memcpy(&char_buffer[position],
-      frame->crc,
+      &(frame->crc),
       CRC_SIZE);
   position += CRC_SIZE;
   /**
@@ -187,21 +191,28 @@ Frame * convert_char_to_frame(char * char_buf)
   memset(&(frame->dst_id),
       0,
       sizeof(char));
+  memset(&(frame->sameMsg),
+      0,
+      sizeof(char));
   memset(&(frame->seqNum),
       0,
       sizeof(char));
   memset(frame->data,
       0,
       sizeof(char)*sizeof(frame->data));
-  memset(frame->crc,
+  memset(&(frame->crc),
       0,
-      sizeof(char)*sizeof(frame->crc));
+      sizeof(char));
   int position = 0;
   memcpy(&(frame->src_id),
       char_buf,
       sizeof(char));
   position = position + sizeof(char);
   memcpy(&(frame->dst_id),
+      &char_buf[position],
+      sizeof(char));
+  position = position + sizeof(char);
+  memcpy(&(frame->sameMsg),
       &char_buf[position],
       sizeof(char));
   position = position + sizeof(char);
@@ -213,10 +224,10 @@ Frame * convert_char_to_frame(char * char_buf)
       &char_buf[position],
       sizeof(char)*sizeof(frame->data));
   position = position + sizeof(char)*sizeof(frame->data);
-  memcpy(frame->crc,
+  memcpy(&(frame->crc),
       &char_buf[position],
-      sizeof(char)*sizeof(frame->crc));
-  position = position + sizeof(char)*sizeof(frame->crc);
+      sizeof(char));
+  position = position + sizeof(char);
   /**
     memset(&(frame->beginSeq),
     0,
@@ -265,30 +276,4 @@ Frame * convert_char_to_frame(char * char_buf)
   return frame;
 }
 
-// Function returns the remainder from a CRC calculation on a char* array of length byte_len 
-char crc8(char* array, int array_len){       
-  // The most significant bit of the polynomial can be discarded in the computation, because:      
-  // (1) it is always 1      
-  // (2) it aligns with the next '1' of the dividend; the XOR result for this bit is always 0      
-  char poly =0x07;  //00000111       
-  char crc = array[0];       
-  int i, j;       
-  for(i = 1; i < array_len; i++){            
-    char next_byte = ith byte of array;            
-    for(j = 7; j >= 0; j--){  
-      // Start at most significant bit of next byte and work our way down                 
-      if(crcs most significant bit is 0){   
-        left shift crc by 1;  
-        crc = crc OR get_bit(next_byte, j); 
-        // get_bit(next_byte, j) returns the a bit in position j from next_byte                  
-      } 
-      else{ 
-        // crcs most significant bit is 1                      
-        left shift crc by 1;  
-        crc = crc OR get_bit(next_byte, j);   
-        crc = crc XOR poly;                 
-      }            
-    }      
-  }       
-  return crc;  
-} 
+

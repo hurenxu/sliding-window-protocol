@@ -20,38 +20,38 @@ typedef unsigned char uchar_t;
 //System configuration information
 struct SysConfig_t
 {
-    float drop_prob;
-    float corrupt_prob;
-    unsigned char automated;
-    char automated_file[AUTOMATED_FILENAME];
+  float drop_prob;
+  float corrupt_prob;
+  unsigned char automated;
+  char automated_file[AUTOMATED_FILENAME];
 };
 typedef struct SysConfig_t  SysConfig;
 
 //Command line input information
 struct Cmd_t
 {
-    uint16_t src_id;
-    uint16_t dst_id;
-    char * message;
+  uint16_t src_id;
+  uint16_t dst_id;
+  char * message;
 };
 typedef struct Cmd_t Cmd;
 
 //Linked list information
 enum LLtype 
 {
-    llt_string,
-    llt_frame,
-    llt_integer,
-    llt_head
+  llt_string,
+  llt_frame,
+  llt_integer,
+  llt_head
 } LLtype;
 
 struct LLnode_t
 {
-    struct LLnode_t * prev;
-    struct LLnode_t * next;
-    enum LLtype type;
+  struct LLnode_t * prev;
+  struct LLnode_t * next;
+  enum LLtype type;
 
-    void * value;
+  void * value;
 };
 typedef struct LLnode_t LLnode;
 
@@ -59,37 +59,37 @@ typedef struct LLnode_t LLnode;
 //Receiver and sender data structures
 struct Receiver_t
 {
-    //DO NOT CHANGE:
-    // 1) buffer_mutex
-    // 2) buffer_cv
-    // 3) input_framelist_head
-    // 4) recv_id
-    pthread_mutex_t buffer_mutex;
-    pthread_cond_t buffer_cv;
-    LLnode * input_framelist_head;
-    
-    int recv_id;
+  //DO NOT CHANGE:
+  // 1) buffer_mutex
+  // 2) buffer_cv
+  // 3) input_framelist_head
+  // 4) recv_id
+  pthread_mutex_t buffer_mutex;
+  pthread_cond_t buffer_cv;
+  LLnode * input_framelist_head;
+
+  int recv_id;
 };
 
 struct Sender_t
 {
-    //DO NOT CHANGE:
-    // 1) buffer_mutex
-    // 2) buffer_cv
-    // 3) input_cmdlist_head
-    // 4) input_framelist_head
-    // 5) send_id
-    pthread_mutex_t buffer_mutex;
-    pthread_cond_t buffer_cv;    
-    LLnode * input_cmdlist_head;
-    LLnode * input_framelist_head;
-    int send_id;
+  //DO NOT CHANGE:
+  // 1) buffer_mutex
+  // 2) buffer_cv
+  // 3) input_cmdlist_head
+  // 4) input_framelist_head
+  // 5) send_id
+  pthread_mutex_t buffer_mutex;
+  pthread_cond_t buffer_cv;    
+  LLnode * input_cmdlist_head;
+  LLnode * input_framelist_head;
+  int send_id;
 };
 
 enum SendFrame_DstType 
 {
-    ReceiverDst,
-    SenderDst
+  ReceiverDst,
+  SenderDst
 } SendFrame_DstType ;
 
 typedef struct Sender_t Sender;
@@ -107,35 +107,66 @@ typedef struct Receiver_t Receiver;
 #define ENCAPSULATE_SIZE 5
 #define SRCID_SIZE 1
 #define DSTID_SIZE 1
+#define BOOL_SIZE 1
 #define SEQ_SIZE 1
 #define FRAME_PAYLOAD_SIZE 59
-#define CRC_SIZE 2
+#define CRC_SIZE 1
+
+int SWS = 1; // send window size
+int RWS = 1; // receive window size
+
+
+
+// used for check the previous sequence number
+uint8_t sequenceNum = 0;
+uint8_t acknowNum = 0;
 
 //TODO: You should change this!
 //Remember, your frame can be AT MOST 64 bytes!
 //#define FRAME_PAYLOAD_SIZE 64
 struct Frame_t
 {
-    // one byte for source id
-    uint8_t src_id;
-    // one byte for destination id
-    uint8_t dst_id;
-    // one byte for sequence number
-    uint8_t seqNum;
-    /**
-    // one byte for both begin seq and end seq
-    char beginSeq;
-    char endSeq;
-    // two bytes for header
-    char address_field;
-    char control_field;*/
-    // payload
-    char data[FRAME_PAYLOAD_SIZE];
-    // two bytes for crc error detection
-    char crc[CRC_SIZE];
+  // one byte for source id
+  uint8_t src_id;
+  // one byte for destination id
+  uint8_t dst_id;
+  // one byte for sequence number
+  uint8_t seqNum;
+  uint8_t sameMsg;
+  /**
+  // one byte for both begin seq and end seq
+  char beginSeq;
+  char endSeq;
+  // two bytes for header
+  char address_field;
+  char control_field;*/
+  // payload
+  char data[FRAME_PAYLOAD_SIZE];
+  // two bytes for crc error detection
+  char crc;
 };
 typedef struct Frame_t Frame;
 
+typedef struct {
+  // sender side state
+  uint8_t LAR; // last ACK received
+  uint8_t LFS; // last frame sent
+  uint8_t semWait = SWS; // the window size each time after sending the frame
+  // try to block the sending if the size is 0
+  // will not block if the sending size is 0
+  struct sendQ_slot {
+    Event timeout; /* event associated with send -timeout */
+    Frame frame;
+  } sendQ[SWS]; 
+
+  // receiver side state
+  uint8_t NFE; // next frame expected
+
+  struct recvQ_slot {
+    int received; // is msg valid?
+    Frame frame;
+  } recvQ[RWS];
+} SwpState;
 
 //Declare global variables here
 //DO NOT CHANGE: 
@@ -151,7 +182,4 @@ int glb_senders_array_length;
 int glb_receivers_array_length;
 SysConfig glb_sysconfig;
 int CORRUPTION_BITS;
-int sequenceNum = 0;
-int acknoledgeNum = 0;
-uint16_t crc16 = 0x8005;
 #endif 

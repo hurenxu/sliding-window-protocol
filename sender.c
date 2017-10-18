@@ -28,9 +28,10 @@ void handle_incoming_acks(Sender * sender,
     incoming_acks_length = ll_get_length(sender->input_framelist_head);
     //    2) Convert the char * buffer to a Frame data type
     char * raw_char_buf = (char*) ACK->value; 
+    int array_len = sizeof(raw_char_buf) / sizeof(raw_char_buf[0]);
     Frame* ackFrame = convert_char_to_frame(raw_char_buf);
     //    3) Check whether the frame is corrupted
-    if(ackframe->crc == NULL) 
+    if(is_corrupted(raw_char_buf, array_len) == 0) 
     {
       // no error in crc
     }
@@ -67,8 +68,8 @@ void handle_input_cmds(Sender * sender,
     //TODO: Suggested steps for handling input cmd
     //    1) Dequeue the Cmd from sender->input_cmdlist_head *
     //    2) Convert to Frame *
-    //    3) Set up the frame according to the sliding window protocol
-    //    4) Compute CRC and add CRC to Frame
+    //    3) Set up the frame according to the sliding window protocol *
+    //    4) Compute CRC and add CRC to Frame *
 
     int input_cmd_length = ll_get_length(sender->input_cmdlist_head);
     
@@ -100,33 +101,36 @@ void handle_input_cmds(Sender * sender,
         else
         {
             //This is probably ONLY one step you want
+	    SwpState * state = (SwpState *) malloc (sizeof(SwpState));
+	    struct sendQ_slot * slot;
             Frame * outgoing_frame = (Frame *) malloc (sizeof(Frame));
             strcpy(outgoing_frame->data, outgoing_cmd->message);
             outgoing_frame->src_id = outgoing_cmd->src_id;
             outgoing_frame->dst_id = outgoing_cmd->dst_id;
-            outgoing_frame->seqNum = sequenceNum;
-            sequenceNum++;
-            //convert frame to char
-            char * char_frame = convert_frame_to_char(outgoing_frame);
-            char * remainder = (char *) malloc(MAX_FRAME_SIZE);
-            memset(remainder, 0, MAX_FRAME_SIZE);
-            memcpy(remainder, char_frame, MAX_FRAME_SIZE);
-            //already has extended 16 bits since crc == 0
-            // divide T(x) by C(x) and find the remainder
-            // xor the result with the original T(x)
+            outgoing_frame->seqNum = state->LFS;
+	    state->LFS = state->LFS + 1;
+	    // the window for the sender
+	    outgoing_frame->crc = 0x00;
+            //sequenceNum++;
+	    slot = &state->sendQ[outgoing_frame->seqNum % SWS];
+	    &slot->frame = frame;
+	    // TODO: uncomment after finish the implemtnation of the timeout
+	    //slot->timeout = sender_get_next_expiring_timeval(Sender * sender);
             //At this point, we don't need the outgoing_cmd
             free(outgoing_cmd->message);
             free(outgoing_cmd);
 
             //Convert the message to the outgoing_charbuf
             char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
+	    int array_len = sizeof(outgoing_charbuf) / sizeof(outgoing_charbuf[0]);
+            //already has extended 8 bits since crc == 0
+	    append_crc(outgoing_charbuf, array_len);
             ll_append_node(outgoing_frames_head_ptr,
                            outgoing_charbuf);
             free(outgoing_frame);
         }
     }   
 }
-
 
 void handle_timedout_frames(Sender * sender,
                             LLnode ** outgoing_frames_head_ptr)

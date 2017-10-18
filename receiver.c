@@ -14,8 +14,8 @@ void handle_incoming_msgs(Receiver * receiver,
     //TODO: Suggested steps for handling incoming frames
     //    1) Dequeue the Frame from the sender->input_framelist_head *
     //    2) Convert the char * buffer to a Frame data type *
-    //    3) Check whether the frame is corrupted
-    //    4) Check whether the frame is for this receiver
+    //    3) Check whether the frame is corrupted *
+    //    4) Check whether the frame is for this receiver *
     //    5) Do sliding window protocol for sender/receiver pair
 
     int incoming_msgs_length = ll_get_length(receiver->input_framelist_head);
@@ -27,16 +27,18 @@ void handle_incoming_msgs(Receiver * receiver,
 
         //DUMMY CODE: Print the raw_char_buf
         //NOTE: You should not blindly print messages!
-        //      Ask yourself: Is this message really for me?
-        //                    Is this message corrupted?
+        //      Ask yourself: Is this message really for me? *
+        //                    Is this message corrupted? *
         //                    Is this an old, retransmitted message?           
         char * raw_char_buf = (char *) ll_inmsg_node->value;
-        Frame * inframe = convert_char_to_frame(raw_char_buf);
+	Frame * inframe;
 
-        // check whether the frame is corrupted
-        if(inframe->crc == NULL) 
+        int array_len = sizeof(raw_char_buf) / sizeof(raw_char_buf[0]);
+        if(is_corrupted(raw_char_buf, array_len) == 0) 
         {
+          // check whether the frame is corrupted
           // no error in crc
+          inframe = convert_char_to_frame(raw_char_buf);
         }
         else 
         {
@@ -51,15 +53,8 @@ void handle_incoming_msgs(Receiver * receiver,
         if(receiver->recv_id == inframe->dst_id) 
         {
           printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
-          for(int i = 0; i < glb_senders_array_length; i++) 
-          {
-            if(glb_senders_array[i].id == inframe->src_id) 
-            {
-              Sender* sender = &glb_senders_array[i];
-              //sender->input_framelist_head.ll_append_node(nodePtr, inframe->data);
-              ll_append_node(&sender->input_framelist_head, raw_char_buf);
-            }
-          }
+	  acknowNum = inframe->seqNum;
+          ll_append_node(outgoing_frames_head_ptr, raw_char_buf);
         }
         else 
         {
