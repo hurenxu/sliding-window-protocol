@@ -95,15 +95,44 @@ enum SendFrame_DstType
 typedef struct Sender_t Sender;
 typedef struct Receiver_t Receiver;
 
-
 #define MAX_FRAME_SIZE 64
+/**
+#define ENCAPSULATE_SIZE 6
+#define ADDRESS_FIELD_SIZE 1
+#define SEQ_SIZE 1
+#define CONTROL_FIELD_SIZE 1
+#define FRAME_PAYLOAD_SIZE 58
+#define CRC_SIZE 2
+*/
+#define ENCAPSULATE_SIZE 5
+#define SRCID_SIZE 1
+#define DSTID_SIZE 1
+#define SEQ_SIZE 1
+#define FRAME_PAYLOAD_SIZE 59
+#define CRC_SIZE 2
 
 //TODO: You should change this!
 //Remember, your frame can be AT MOST 64 bytes!
-#define FRAME_PAYLOAD_SIZE 64
+//#define FRAME_PAYLOAD_SIZE 64
 struct Frame_t
 {
+    // one byte for source id
+    uint8_t src_id;
+    // one byte for destination id
+    uint8_t dst_id;
+    // one byte for sequence number
+    uint8_t seqNum;
+    /**
+    // one byte for both begin seq and end seq
+    char beginSeq;
+    char endSeq;
+    // two bytes for header
+    char address_field;
+    char control_field;*/
+    // payload
     char data[FRAME_PAYLOAD_SIZE];
+    // two bytes for crc error detection
+    char crc[CRC_SIZE];
 };
 typedef struct Frame_t Frame;
 
@@ -122,4 +151,7 @@ int glb_senders_array_length;
 int glb_receivers_array_length;
 SysConfig glb_sysconfig;
 int CORRUPTION_BITS;
+int sequenceNum = 0;
+int acknoledgeNum = 0;
+uint16_t crc16 = 0x8005;
 #endif 

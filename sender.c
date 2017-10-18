@@ -11,6 +11,7 @@ void init_sender(Sender * sender, int id)
 struct timeval * sender_get_next_expiring_timeval(Sender * sender)
 {
     //TODO: You should fill in this function so that it returns the next timeout that should occur
+    
     return NULL;
 }
 
@@ -18,12 +19,45 @@ struct timeval * sender_get_next_expiring_timeval(Sender * sender)
 void handle_incoming_acks(Sender * sender,
                           LLnode ** outgoing_frames_head_ptr)
 {
-    //TODO: Suggested steps for handling incoming ACKs
+  //TODO: Suggested steps for handling incoming ACKs
+  int incoming_acks_length = ll_get_length(sender->input_framelist_head);
+  while (incoming_acks_length > 0)
+  {
     //    1) Dequeue the ACK from the sender->input_framelist_head
+    LLnode* ACK = ll_pop_node(&(sender->input_framelist_head));
+    incoming_acks_length = ll_get_length(sender->input_framelist_head);
     //    2) Convert the char * buffer to a Frame data type
+    char * raw_char_buf = (char*) ACK->value; 
+    Frame* ackFrame = convert_char_to_frame(raw_char_buf);
     //    3) Check whether the frame is corrupted
+    if(ackframe->crc == NULL) 
+    {
+      // no error in crc
+    }
+    else 
+    {
+      free(raw_char_buf);
+      free(ackFrame);
+      free(ACK);
+      // continue the loop and ignore the data
+      continue;
+    }
     //    4) Check whether the frame is for this sender
+    if(sender->send_id == ackFrame->src_id) 
+    {
+      // standard message 
+      printf("<SEND_%d>:[%s] ACK\n", sender->send_id, inframe->data);
+      
+    }
+    else 
+    {
+      free(raw_char_buf);
+      free(ackFrame);
+      free(ACK);
+      continue;
+    }
     //    5) Do sliding window protocol for sender/receiver pair   
+  }
 }
 
 
@@ -31,8 +65,8 @@ void handle_input_cmds(Sender * sender,
                        LLnode ** outgoing_frames_head_ptr)
 {
     //TODO: Suggested steps for handling input cmd
-    //    1) Dequeue the Cmd from sender->input_cmdlist_head
-    //    2) Convert to Frame
+    //    1) Dequeue the Cmd from sender->input_cmdlist_head *
+    //    2) Convert to Frame *
     //    3) Set up the frame according to the sliding window protocol
     //    4) Compute CRC and add CRC to Frame
 
@@ -68,7 +102,18 @@ void handle_input_cmds(Sender * sender,
             //This is probably ONLY one step you want
             Frame * outgoing_frame = (Frame *) malloc (sizeof(Frame));
             strcpy(outgoing_frame->data, outgoing_cmd->message);
-
+            outgoing_frame->src_id = outgoing_cmd->src_id;
+            outgoing_frame->dst_id = outgoing_cmd->dst_id;
+            outgoing_frame->seqNum = sequenceNum;
+            sequenceNum++;
+            //convert frame to char
+            char * char_frame = convert_frame_to_char(outgoing_frame);
+            char * remainder = (char *) malloc(MAX_FRAME_SIZE);
+            memset(remainder, 0, MAX_FRAME_SIZE);
+            memcpy(remainder, char_frame, MAX_FRAME_SIZE);
+            //already has extended 16 bits since crc == 0
+            // divide T(x) by C(x) and find the remainder
+            // xor the result with the original T(x)
             //At this point, we don't need the outgoing_cmd
             free(outgoing_cmd->message);
             free(outgoing_cmd);

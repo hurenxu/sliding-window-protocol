@@ -12,8 +12,8 @@ void handle_incoming_msgs(Receiver * receiver,
                           LLnode ** outgoing_frames_head_ptr)
 {
     //TODO: Suggested steps for handling incoming frames
-    //    1) Dequeue the Frame from the sender->input_framelist_head
-    //    2) Convert the char * buffer to a Frame data type
+    //    1) Dequeue the Frame from the sender->input_framelist_head *
+    //    2) Convert the char * buffer to a Frame data type *
     //    3) Check whether the frame is corrupted
     //    4) Check whether the frame is for this receiver
     //    5) Do sliding window protocol for sender/receiver pair
@@ -32,12 +32,45 @@ void handle_incoming_msgs(Receiver * receiver,
         //                    Is this an old, retransmitted message?           
         char * raw_char_buf = (char *) ll_inmsg_node->value;
         Frame * inframe = convert_char_to_frame(raw_char_buf);
-        
+
+        // check whether the frame is corrupted
+        if(inframe->crc == NULL) 
+        {
+          // no error in crc
+        }
+        else 
+        {
+          free(raw_char_buf);
+          free(inframe);
+          free(ll_inmsg_node);
+          // continue the loop and ignore the data
+          continue;
+        }
+
+        // check whether the frame is for this receiver
+        if(receiver->recv_id == inframe->dst_id) 
+        {
+          printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
+          for(int i = 0; i < glb_senders_array_length; i++) 
+          {
+            if(glb_senders_array[i].id == inframe->src_id) 
+            {
+              Sender* sender = &glb_senders_array[i];
+              //sender->input_framelist_head.ll_append_node(nodePtr, inframe->data);
+              ll_append_node(&sender->input_framelist_head, raw_char_buf);
+            }
+          }
+        }
+        else 
+        {
+          free(raw_char_buf);
+          free(inframe);
+          free(ll_inmsg_node);
+          continue;
+        }
+
         //Free raw_char_buf
         free(raw_char_buf);
-        
-        printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
-
         free(inframe);
         free(ll_inmsg_node);
     }
