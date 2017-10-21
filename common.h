@@ -15,6 +15,8 @@
 
 #define MAX_COMMAND_LENGTH 16
 #define AUTOMATED_FILENAME 512
+#define BUFFER_SIZE 16
+#define RECEIVER_SIZE 255 
 typedef unsigned char uchar_t;
 
 //System configuration information
@@ -56,35 +58,6 @@ struct LLnode_t
 typedef struct LLnode_t LLnode;
 
 
-//Receiver and sender data structures
-struct Receiver_t
-{
-  //DO NOT CHANGE:
-  // 1) buffer_mutex
-  // 2) buffer_cv
-  // 3) input_framelist_head
-  // 4) recv_id
-  pthread_mutex_t buffer_mutex;
-  pthread_cond_t buffer_cv;
-  LLnode * input_framelist_head;
-
-  int recv_id;
-};
-
-struct Sender_t
-{
-  //DO NOT CHANGE:
-  // 1) buffer_mutex
-  // 2) buffer_cv
-  // 3) input_cmdlist_head
-  // 4) input_framelist_head
-  // 5) send_id
-  pthread_mutex_t buffer_mutex;
-  pthread_cond_t buffer_cv;    
-  LLnode * input_cmdlist_head;
-  LLnode * input_framelist_head;
-  int send_id;
-};
 
 enum SendFrame_DstType 
 {
@@ -92,8 +65,6 @@ enum SendFrame_DstType
   SenderDst
 } SendFrame_DstType ;
 
-typedef struct Sender_t Sender;
-typedef struct Receiver_t Receiver;
 
 #define MAX_FRAME_SIZE 64
 /**
@@ -103,23 +74,18 @@ typedef struct Receiver_t Receiver;
 #define CONTROL_FIELD_SIZE 1
 #define FRAME_PAYLOAD_SIZE 58
 #define CRC_SIZE 2
-*/
-#define ENCAPSULATE_SIZE 5
+ */
+#define ENCAPSULATE_SIZE 7
 #define SRCID_SIZE 1
 #define DSTID_SIZE 1
 #define BOOL_SIZE 1
 #define SEQ_SIZE 1
-#define FRAME_PAYLOAD_SIZE 59
+#define ACK_SIZE 1
+#define TYPE_SIZE 1
+#define FRAME_PAYLOAD_SIZE 57
 #define CRC_SIZE 1
 
-int SWS = 1; // send window size
-int RWS = 1; // receive window size
-
-
-
-// used for check the previous sequence number
-uint8_t sequenceNum = 0;
-uint8_t acknowNum = 0;
+//uint8_t acknowNum = 0;
 
 //TODO: You should change this!
 //Remember, your frame can be AT MOST 64 bytes!
@@ -132,6 +98,9 @@ struct Frame_t
   uint8_t dst_id;
   // one byte for sequence number
   uint8_t seqNum;
+  uint8_t ackNum;
+  // 0 represents seq frame, 1 represents ack frame
+  uint8_t type;
   uint8_t sameMsg;
   /**
   // one byte for both begin seq and end seq
@@ -147,26 +116,71 @@ struct Frame_t
 };
 typedef struct Frame_t Frame;
 
-typedef struct {
-  // sender side state
+// TODO: change the window size if works
+#define SWS 8
+#define RWS 8
+
+// sender side state
+struct Sender_sendQ_for_each_Receiver {
+  // initialization in the header, or else compile error
+  uint8_t seq; // sequence number for the frame that stored in the sender`
   uint8_t LAR; // last ACK received
   uint8_t LFS; // last frame sent
-  uint8_t semWait = SWS; // the window size each time after sending the frame
-  // try to block the sending if the size is 0
-  // will not block if the sending size is 0
   struct sendQ_slot {
-    Event timeout; /* event associated with send -timeout */
-    Frame frame;
-  } sendQ[SWS]; 
+    struct timeval * timeout; /* event associated with send -timeout */
+    Frame * frame;
+  } sendQ[BUFFER_SIZE];
+};
+typedef struct Sender_sendQ_for_each_Receiver sendArray;
 
-  // receiver side state
-  uint8_t NFE; // next frame expected
+//Receiver and sender data structures
+struct Receiver_t
+{
+  //DO NOT CHANGE:
+  // 1) buffer_mutex
+  // 2) buffer_cv
+  // 3) input_framelist_head
+  // 4) recv_id
+  pthread_mutex_t buffer_mutex;
+  pthread_cond_t buffer_cv;
+  LLnode * input_framelist_head;
+
+  int recv_id;
 
   struct recvQ_slot {
     int received; // is msg valid?
-    Frame frame;
-  } recvQ[RWS];
-} SwpState;
+    // 1 means the message is valid and has received
+    Frame * frame;
+  } recvQ[BUFFER_SIZE];
+
+  // receiver side state
+  // initialization in the header, or else compile error
+  uint8_t NFE; // next frame expected
+  uint8_t LFR; // last frame recieved
+  uint8_t LAF; // last acceptable frame
+};
+
+struct Sender_t
+{
+  //DO NOT CHANGE:
+  // 1) buffer_mutex
+  // 2) buffer_cv
+  // 3) input_cmdlist_head
+  // 4) input_framelist_head
+  // 5) send_id
+  pthread_mutex_t buffer_mutex;
+  pthread_cond_t buffer_cv;    
+  LLnode * input_cmdlist_head;
+  LLnode * input_framelist_head;
+  int send_id;
+  int inputFrameSize;
+
+  sendArray sendArr[RECEIVER_SIZE];
+};
+
+typedef struct Sender_t Sender;
+typedef struct Receiver_t Receiver;
+
 
 //Declare global variables here
 //DO NOT CHANGE: 

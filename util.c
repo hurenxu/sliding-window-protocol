@@ -123,6 +123,9 @@ char * convert_frame_to_char(Frame * frame)
 {
   //TODO: You should implement this as necessary
   char * char_buffer = (char *) malloc(MAX_FRAME_SIZE);
+  memset(char_buffer, 0, MAX_FRAME_SIZE);
+  memcpy(char_buffer, frame, MAX_FRAME_SIZE);
+  /**
   memset(char_buffer,
       0,
       MAX_FRAME_SIZE);
@@ -136,13 +139,21 @@ char * convert_frame_to_char(Frame * frame)
       DSTID_SIZE);
   position += DSTID_SIZE;
   memcpy(&char_buffer[position],
-      &(frame->sameMsg),
-      BOOL_SIZE);
-  position += BOOL_SIZE;
-  memcpy(&char_buffer[position],
       &(frame->seqNum),
       SEQ_SIZE);
   position += SEQ_SIZE;
+  memcpy(&char_buffer[position],
+      &(frame->ackNum),
+      ACK_SIZE);
+  position += ACK_SIZE;
+  memcpy(&char_buffer[position],
+      &(frame->type),
+      TYPE_SIZE);
+  position += TYPE_SIZE;
+  memcpy(&char_buffer[position],
+      &(frame->sameMsg),
+      BOOL_SIZE);
+  position += BOOL_SIZE;
   memcpy(&char_buffer[position], 
       frame->data,
       FRAME_PAYLOAD_SIZE);
@@ -151,6 +162,7 @@ char * convert_frame_to_char(Frame * frame)
       &(frame->crc),
       CRC_SIZE);
   position += CRC_SIZE;
+  */
   /**
     memcpy(char_buffer,
     &(frame->beginSeq),
@@ -185,16 +197,26 @@ Frame * convert_char_to_frame(char * char_buf)
 {
   //TODO: You should implement this as necessary
   Frame * frame = (Frame *) malloc(sizeof(Frame));
+  memset(frame, 0, MAX_FRAME_SIZE);
+  memcpy(frame, char_buf, MAX_FRAME_SIZE);
+  /**
   memset(&(frame->src_id),
       0,
       sizeof(char));
   memset(&(frame->dst_id),
       0,
       sizeof(char));
-  memset(&(frame->sameMsg),
+  memset(&(frame->seqNum),
       0,
       sizeof(char));
-  memset(&(frame->seqNum),
+  memset(&(frame->ackNum),
+      0,
+      sizeof(char));
+  memset(&(frame->type),
+      0,
+      sizeof(char));
+
+  memset(&(frame->sameMsg),
       0,
       sizeof(char));
   memset(frame->data,
@@ -212,11 +234,19 @@ Frame * convert_char_to_frame(char * char_buf)
       &char_buf[position],
       sizeof(char));
   position = position + sizeof(char);
-  memcpy(&(frame->sameMsg),
+  memcpy(&(frame->seqNum),
       &char_buf[position],
       sizeof(char));
   position = position + sizeof(char);
-  memcpy(&(frame->seqNum),
+  memcpy(&(frame->ackNum),
+      &char_buf[position],
+      sizeof(char));
+  position = position + sizeof(char);
+  memcpy(&(frame->type),
+      &char_buf[position],
+      sizeof(char));
+  position = position + sizeof(char);
+  memcpy(&(frame->sameMsg),
       &char_buf[position],
       sizeof(char));
   position = position + sizeof(char);
@@ -228,6 +258,7 @@ Frame * convert_char_to_frame(char * char_buf)
       &char_buf[position],
       sizeof(char));
   position = position + sizeof(char);
+  */
   /**
     memset(&(frame->beginSeq),
     0,
@@ -276,4 +307,34 @@ Frame * convert_char_to_frame(char * char_buf)
   return frame;
 }
 
-
+void ll_split_head(LLnode ** head_ptr, size_t cut_size){      
+  //TODO: check if head is NULL       
+  if((head_ptr == NULL) || (*head_ptr == NULL)) 
+  {
+    return;
+  }
+  LLnode* head = *head_ptr;     
+  Cmd* head_cmd = (Cmd*) head -> value;     
+  char* msg = head_cmd -> message;     
+  if(strlen(msg) < cut_size) {       
+    return;       
+  }     
+  else{       
+    size_t i;       
+    Cmd* next_cmd;       
+    for(i = cut_size; i < strlen(msg); i += cut_size) {                          
+      // TODO: malloc  next, next_cmd      
+      next_cmd = (Cmd *) malloc(sizeof(Cmd));
+      char* cmd_msg = (char*) malloc((cut_size + 1) * sizeof(char)); // One extra byte for NULL character     
+      memset(cmd_msg, 0, (cut_size + 1) * sizeof(char));      
+      strncpy(cmd_msg, msg + i, cut_size);     
+      // TODO: flll the next_mcd     
+      next_cmd->src_id = head_cmd->src_id;
+      next_cmd->dst_id = head_cmd->dst_id;
+      next_cmd->message = cmd_msg;
+      //  TODO: fill the next_nose and add it to the linked list       
+      ll_append_node(head_ptr, next_cmd);
+    }       
+    msg[cut_size] = '\0';     
+  }      
+}

@@ -4,7 +4,9 @@ char get_bit (char byte, int pos)
 {
   // return a char with a value of 0 or 1 depending on whether the bit in the pos is 0 or 1
   char result;
-  if ((byte & 0x80) == 0) 
+  char tmp = byte >> pos;
+  //if ((byte & 0x80) == 0) 
+  if ((tmp & 0x01) == 0) 
   {
     result = 0;
   }
@@ -27,16 +29,17 @@ char crc8(char* array, int array_len){
     for(j = 7; j >= 0; j--){  
       // Start at most significant bit of next byte and work our way down                 
       // crcs most significant bit is 0
-      if(get_bit(crc, j) == 0){   
+      //if(get_bit(crc, j) == 0){   
+      if((crc & 0x80) == 0) {
         // left shift crc by 1;  
-	crc = crc << 1;
+	      crc = crc << 1;
         crc = crc | get_bit(next_byte, j); 
         // get_bit(next_byte, j) returns the a bit in position j from next_byte                  
       } 
       else{ 
         // crcs most significant bit is 1                      
         // left shift crc by 1;  
-	crc = crc << 1;
+	      crc = crc << 1;
         crc = crc | get_bit(next_byte, j);   
         crc = crc ^ poly;                 
       }            

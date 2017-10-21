@@ -17,11 +17,6 @@
 #include "communicate.h"
 #include "crc.h"
 
-struct sendQ_slot {
-Event timeout; /* event associated with send -timeout */
-Frame frame;
- } sendQ[SWS]; 
-
 void init_sender(Sender *, int);
 void * run_sender(void *);
 

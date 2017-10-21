@@ -6,12 +6,30 @@ void init_sender(Sender * sender, int id)
     sender->send_id = id;
     sender->input_cmdlist_head = NULL;
     sender->input_framelist_head = NULL;
+
+    sender->inputFrameSize = 0;
+    // initilization, since i got a compile error initilizating in struct
+    int i;
+    for(i = 0; i < RECEIVER_SIZE; i++) 
+    {
+      sender->sendArr[i].seq = -1;
+      sender->sendArr[i].LAR = -1;
+      sender->sendArr[i].LFS = -1;
+    }
+}
+
+void calculate_timeout(struct timeval * timeout){ 
+  gettimeofday(timeout, NULL); 
+  timeout->tv_usec+=100000; 
+  if(timeout->tv_usec>=1000000){  
+    timeout->tv_usec-=1000000;  
+    timeout->tv_sec+=1;  
+  } 
 }
 
 struct timeval * sender_get_next_expiring_timeval(Sender * sender)
 {
     //TODO: You should fill in this function so that it returns the next timeout that should occur
-    
     return NULL;
 }
 
@@ -28,7 +46,8 @@ void handle_incoming_acks(Sender * sender,
     incoming_acks_length = ll_get_length(sender->input_framelist_head);
     //    2) Convert the char * buffer to a Frame data type
     char * raw_char_buf = (char*) ACK->value; 
-    int array_len = sizeof(raw_char_buf) / sizeof(raw_char_buf[0]);
+    //int array_len = sizeof(raw_char_buf) / sizeof(raw_char_buf[0]);
+    int array_len = MAX_FRAME_SIZE;
     Frame* ackFrame = convert_char_to_frame(raw_char_buf);
     //    3) Check whether the frame is corrupted
     if(is_corrupted(raw_char_buf, array_len) == 0) 
@@ -37,27 +56,112 @@ void handle_incoming_acks(Sender * sender,
     }
     else 
     {
-      free(raw_char_buf);
       free(ackFrame);
       free(ACK);
       // continue the loop and ignore the data
       continue;
     }
-    //    4) Check whether the frame is for this sender
-    if(sender->send_id == ackFrame->src_id) 
+    //    4) Check whether the frame is for this sende
+    if(sender->send_id == ackFrame->dst_id) 
     {
+      int recv_id = ackFrame->src_id;
       // standard message 
-      printf("<SEND_%d>:[%s] ACK\n", sender->send_id, inframe->data);
-      
+      //printf("<SEND_%d>:[%s] ACK\n", sender->send_id, ackFrame->data);
+      //    5) Do sliding window protocol for sender/receiver pair   
+      // the window is from [LAR+1, LFS]
+      sender->sendArr[recv_id].LAR = ackFrame->ackNum;
+      // deal with retransmit
+      // last frame ack in the window should be LAR, check whether it equals to
+      // LFS, since LFS should be the last acknoledgement receive.
+      if(sender->sendArr[recv_id].LAR != sender->sendArr[recv_id].LFS) 
+      {
+         // first find the window inside the senderArr
+         sendArray sendBuffer = sender->sendArr[recv_id];
+         // send the next frame which squence number is right next to the LAR
+         int seqNum = sender->sendArr[recv_id].LAR + 1;
+         struct sendQ_slot *slot;
+         //This is probably ONLY one step you want
+         Frame * outgoing_frame = (Frame *) malloc (sizeof(Frame));
+	       //slot = sendQ[seqNum];
+         slot = &(sendBuffer.sendQ[seqNum % BUFFER_SIZE]);
+         outgoing_frame = slot->frame;
+
+         //Convert the message to the outgoing_charbuf
+         char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
+         ll_append_node(outgoing_frames_head_ptr,
+                       outgoing_charbuf);
+         //free(outgoing_frame);
+         // after sending out the missing frame, upate the LAR, since we need to
+         // do the selective transmission
+         sender->sendArr[recv_id].LAR = sender->sendArr[recv_id].LFS;
+      }
+      else 
+      {
+        sender->inputFrameSize--;
+      }
+      // not run the program if all the frames have been sent
+      if(sender->inputFrameSize == 0) 
+      {
+        // continue, not run anything
+        continue;
+      }
+      //LFS += SWS;
+      // size that the send window can move
+      uint8_t offset = SWS - (sender->sendArr[recv_id].LFS - sender->sendArr[recv_id].LAR);
+      sender->sendArr[recv_id].LFS += offset;
+      // the window should start from LAR + 1, and end in LFS
+      // send the frame from LAR+1, LFS
+      // case 1 usual case
+      if(sender->sendArr[recv_id].LAR <= sender->sendArr[recv_id].LFS) {
+        uint8_t i; 
+        for(i = sender->sendArr[recv_id].LAR + 1; (i > sender->sendArr[recv_id].LAR) && (i <= sender->sendArr[recv_id].LFS); i++) 
+        {
+            // first find the window inside the senderArr
+            sendArray sendBuffer = sender->sendArr[recv_id];
+            struct sendQ_slot *slot;
+            //This is probably ONLY one step you want
+            Frame * outgoing_frame = (Frame *) malloc (sizeof(Frame));
+	          //slot = sendQ[i];
+            slot = &(sendBuffer.sendQ[i % BUFFER_SIZE]);
+            outgoing_frame = slot->frame;
+
+            //Convert the message to the outgoing_charbuf
+            char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
+            ll_append_node(outgoing_frames_head_ptr,
+                           outgoing_charbuf);
+            //free(outgoing_frame);
+        }
+      }
+      // case 2 sequence number wrap around
+      else if(sender->sendArr[recv_id].LAR > sender->sendArr[recv_id].LFS) {
+        uint8_t i;
+        for(i = sender->sendArr[recv_id].LAR + 1; (i > sender->sendArr[recv_id].LAR) || (i <= sender->sendArr[recv_id].LFS); i++) 
+        {
+            // first find the window inside the senderArr
+            sendArray sendBuffer = sender->sendArr[recv_id];
+            struct sendQ_slot *slot;
+            //This is probably ONLY one step you want
+            Frame * outgoing_frame = (Frame *) malloc (sizeof(Frame));
+	          //slot = sendQ[i];
+            slot = &(sendBuffer.sendQ[i % BUFFER_SIZE]);
+            outgoing_frame = slot->frame;
+
+            //Convert the message to the outgoing_charbuf
+            char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
+            ll_append_node(outgoing_frames_head_ptr,
+                           outgoing_charbuf);
+            //free(outgoing_frame);
+        }
+      }
     }
     else 
     {
-      free(raw_char_buf);
       free(ackFrame);
       free(ACK);
       continue;
     }
-    //    5) Do sliding window protocol for sender/receiver pair   
+    free(ackFrame);
+    free(ACK);
   }
 }
 
@@ -76,6 +180,7 @@ void handle_input_cmds(Sender * sender,
         
     //Recheck the command queue length to see if stdin_thread dumped a command on us
     input_cmd_length = ll_get_length(sender->input_cmdlist_head);
+    int sendFrames = 0;
     while (input_cmd_length > 0)
     {
         //Pop a node off and update the input_cmd_length
@@ -93,41 +198,51 @@ void handle_input_cmds(Sender * sender,
         //                    Does the receiver have enough space in in it's input queue to handle this message?
         //                    Were the previous messages sent to this receiver ACTUALLY delivered to the receiver?
         int msg_length = strlen(outgoing_cmd->message);
-        if (msg_length > MAX_FRAME_SIZE)
+        //if (msg_length > MAX_FRAME_SIZE)
+        if (msg_length > FRAME_PAYLOAD_SIZE)
         {
             //Do something about messages that exceed the frame size
-            printf("<SEND_%d>: sending messages of length greater than %d is not implemented\n", sender->send_id, MAX_FRAME_SIZE);
+            //printf("<SEND_%d>: sending messages of length greater than %d is not implemented\n", sender->send_id, MAX_FRAME_SIZE);
+            ll_split_head(&sender->input_cmdlist_head, FRAME_PAYLOAD_SIZE - 1); 
+            input_cmd_length = ll_get_length(sender->input_cmdlist_head);
         }
         else
         {
+            struct sendQ_slot *slot;
             //This is probably ONLY one step you want
-	    SwpState * state = (SwpState *) malloc (sizeof(SwpState));
-	    struct sendQ_slot * slot;
             Frame * outgoing_frame = (Frame *) malloc (sizeof(Frame));
             strcpy(outgoing_frame->data, outgoing_cmd->message);
             outgoing_frame->src_id = outgoing_cmd->src_id;
             outgoing_frame->dst_id = outgoing_cmd->dst_id;
-            outgoing_frame->seqNum = state->LFS;
-	    state->LFS = state->LFS + 1;
-	    // the window for the sender
-	    outgoing_frame->crc = 0x00;
+            int recv_id = outgoing_frame->dst_id;
+            //outgoing_frame->seqNum = ++LFS;
+            sender->sendArr[recv_id].seq += 1;
+            outgoing_frame->seqNum = sender->sendArr[recv_id].seq;
+	          // the window for the sender
+	          outgoing_frame->crc = 0x00;
             //sequenceNum++;
-	    slot = &state->sendQ[outgoing_frame->seqNum % SWS];
-	    &slot->frame = frame;
-	    // TODO: uncomment after finish the implemtnation of the timeout
-	    //slot->timeout = sender_get_next_expiring_timeval(Sender * sender);
-            //At this point, we don't need the outgoing_cmd
-            free(outgoing_cmd->message);
-            free(outgoing_cmd);
-
             //Convert the message to the outgoing_charbuf
             char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
-	    int array_len = sizeof(outgoing_charbuf) / sizeof(outgoing_charbuf[0]);
+	          //int array_len = sizeof(outgoing_charbuf) / sizeof(outgoing_charbuf[0]);
+            int array_len = MAX_FRAME_SIZE;
             //already has extended 8 bits since crc == 0
-	    append_crc(outgoing_charbuf, array_len);
-            ll_append_node(outgoing_frames_head_ptr,
-                           outgoing_charbuf);
-            free(outgoing_frame);
+	          append_crc(outgoing_charbuf, array_len);
+            outgoing_frame = convert_char_to_frame(outgoing_charbuf);
+	          slot = &(sender->sendArr[recv_id].sendQ[outgoing_frame->seqNum % BUFFER_SIZE]);
+	          slot->frame = outgoing_frame;
+            slot->timeout = malloc(sizeof(struct timeval));
+            calculate_timeout(slot->timeout);
+            //At this point, we don't need the outgoing_cmd
+            sendFrames++;
+            sender->inputFrameSize = sendFrames;
+            if(sendFrames <= RWS) {
+              sender->sendArr[recv_id].LFS = sender->sendArr[recv_id].LFS + 1;
+              ll_append_node(outgoing_frames_head_ptr,
+                            outgoing_charbuf);
+            }
+            free(outgoing_cmd->message);
+            free(outgoing_cmd);
+            //free(outgoing_frame);
         }
     }   
 }
@@ -136,9 +251,55 @@ void handle_timedout_frames(Sender * sender,
                             LLnode ** outgoing_frames_head_ptr)
 {
     //TODO: Suggested steps for handling timed out datagrams
+
     //    1) Iterate through the sliding window protocol information you maintain for each receiver
-    //    2) Locate frames that are timed out and add them to the outgoing frames
-    //    3) Update the next timeout field on the outgoing frames
+    // so all the senders and get their sliding window protocol which is the 
+    // sendQ in the sendArr
+    int i;
+    for(i = 0; i < RECEIVER_SIZE; i++) 
+    {
+      // this is the send array with the sendQ inside
+      uint8_t LAR = sender->sendArr[i].LAR;
+      uint8_t LFS = sender->sendArr[i].LFS;
+
+      // this means all the send data has its acknoledgement
+      if(LAR == LFS) 
+      {
+        continue;
+      }
+      // check all the frame that is afte the LAR, and before the LFS
+      // the same idea as this for(int j = LAR; j <= LFS; j++), but
+      // avoid wrap around
+
+      //    2) Locate frames that are timed out and add them to the outgoing frames
+      int j;
+      for(j = LAR + 1; j != LFS + 1; j++) 
+      {
+        if(j >= BUFFER_SIZE) 
+        {
+          j = j % BUFFER_SIZE; 
+        }
+        struct timeval * currtime = malloc(sizeof(struct timeval));
+        gettimeofday(currtime, NULL);
+        
+        long diff = timeval_usecdiff(currtime, sender->sendArr[i].sendQ[j % BUFFER_SIZE].timeout);
+        // since the diff is currtime - timeout, so if the diff is either 0 or
+        // greater than zero(currtime is later than timeout)
+        if (diff <= 0) 
+        {
+          //This is probably ONLY one step you want
+          Frame * outgoing_frame = sender->sendArr[i].sendQ[j % BUFFER_SIZE].frame;
+          //Convert the message to the outgoing_charbuf
+          char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
+          ll_append_node(outgoing_frames_head_ptr,
+                         outgoing_charbuf);
+
+          //    3) Update the next timeout field on the outgoing frames
+          calculate_timeout(sender->sendArr[i].sendQ[j % BUFFER_SIZE].timeout);
+          //free(outgoing_frame);
+        }
+      }
+    }
 }
 
 
@@ -265,3 +426,5 @@ void * run_sender(void * input_sender)
     pthread_exit(NULL);
     return 0;
 }
+
+ 
