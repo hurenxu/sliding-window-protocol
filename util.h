@@ -31,4 +31,5 @@ long timeval_usecdiff(struct timeval *,
 char * convert_frame_to_char(Frame *);
 Frame * convert_char_to_frame(char *);
 void ll_split_head(LLnode ** head_ptr, size_t cut_size);
+char* concat(const char * s1, const char * s2);
 #endif

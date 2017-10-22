@@ -108,6 +108,25 @@ void handle_incoming_acks(Sender * sender,
       //LFS += SWS;
       // size that the send window can move
       uint8_t offset = SWS - (sender->sendArr[recv_id].LFS - sender->sendArr[recv_id].LAR);
+      /**
+      if(offset > sender->inputFrameSize) 
+      {
+        offset = sender->inputFrameSize;
+      }
+      else 
+      {
+        sender->sendArr[recv_id].LFS += offset;
+      }*/
+      
+      //if(offset > sender->inputFrameSize) 
+      //{
+        //offset = sender->inputFrameSize;
+      //}
+      //printf("%d offset & %d inputFrameSize\n", offset, sender->inputFrameSize);
+      //if(sender->inputFrameSize <) 
+      //{
+      
+      //}
       sender->sendArr[recv_id].LFS += offset;
       // the window should start from LAR + 1, and end in LFS
       // send the frame from LAR+1, LFS
@@ -179,6 +198,7 @@ void handle_input_cmds(Sender * sender,
     
         
     //Recheck the command queue length to see if stdin_thread dumped a command on us
+    ll_split_head(&sender->input_cmdlist_head, FRAME_PAYLOAD_SIZE - 1); 
     input_cmd_length = ll_get_length(sender->input_cmdlist_head);
     int sendFrames = 0;
     while (input_cmd_length > 0)
@@ -214,6 +234,12 @@ void handle_input_cmds(Sender * sender,
             strcpy(outgoing_frame->data, outgoing_cmd->message);
             outgoing_frame->src_id = outgoing_cmd->src_id;
             outgoing_frame->dst_id = outgoing_cmd->dst_id;
+            if((outgoing_cmd->sameMsg != 2) && (outgoing_cmd->sameMsg != 1)) {
+              outgoing_frame->sameMsg = 0;
+            }
+            else {
+              outgoing_frame->sameMsg = outgoing_cmd->sameMsg;
+            }
             int recv_id = outgoing_frame->dst_id;
             //outgoing_frame->seqNum = ++LFS;
             sender->sendArr[recv_id].seq += 1;

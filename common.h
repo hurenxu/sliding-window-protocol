@@ -34,6 +34,7 @@ struct Cmd_t
 {
   uint16_t src_id;
   uint16_t dst_id;
+  uint8_t sameMsg;
   char * message;
 };
 typedef struct Cmd_t Cmd;
@@ -101,6 +102,7 @@ struct Frame_t
   uint8_t ackNum;
   // 0 represents seq frame, 1 represents ack frame
   uint8_t type;
+  // if smaeMsg == 0 then it is different message
   uint8_t sameMsg;
   /**
   // one byte for both begin seq and end seq

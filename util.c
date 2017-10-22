@@ -126,43 +126,43 @@ char * convert_frame_to_char(Frame * frame)
   memset(char_buffer, 0, MAX_FRAME_SIZE);
   memcpy(char_buffer, frame, MAX_FRAME_SIZE);
   /**
-  memset(char_buffer,
-      0,
-      MAX_FRAME_SIZE);
-  int position = 0;
-  memcpy(char_buffer,
-      &(frame->src_id),
-      SRCID_SIZE);
-  position = position + SRCID_SIZE;
-  memcpy(&char_buffer[position],
-      &(frame->dst_id),
-      DSTID_SIZE);
-  position += DSTID_SIZE;
-  memcpy(&char_buffer[position],
-      &(frame->seqNum),
-      SEQ_SIZE);
-  position += SEQ_SIZE;
-  memcpy(&char_buffer[position],
-      &(frame->ackNum),
-      ACK_SIZE);
-  position += ACK_SIZE;
-  memcpy(&char_buffer[position],
-      &(frame->type),
-      TYPE_SIZE);
-  position += TYPE_SIZE;
-  memcpy(&char_buffer[position],
-      &(frame->sameMsg),
-      BOOL_SIZE);
-  position += BOOL_SIZE;
-  memcpy(&char_buffer[position], 
-      frame->data,
-      FRAME_PAYLOAD_SIZE);
-  position += FRAME_PAYLOAD_SIZE;
-  memcpy(&char_buffer[position],
-      &(frame->crc),
-      CRC_SIZE);
-  position += CRC_SIZE;
-  */
+    memset(char_buffer,
+    0,
+    MAX_FRAME_SIZE);
+    int position = 0;
+    memcpy(char_buffer,
+    &(frame->src_id),
+    SRCID_SIZE);
+    position = position + SRCID_SIZE;
+    memcpy(&char_buffer[position],
+    &(frame->dst_id),
+    DSTID_SIZE);
+    position += DSTID_SIZE;
+    memcpy(&char_buffer[position],
+    &(frame->seqNum),
+    SEQ_SIZE);
+    position += SEQ_SIZE;
+    memcpy(&char_buffer[position],
+    &(frame->ackNum),
+    ACK_SIZE);
+    position += ACK_SIZE;
+    memcpy(&char_buffer[position],
+    &(frame->type),
+    TYPE_SIZE);
+    position += TYPE_SIZE;
+    memcpy(&char_buffer[position],
+    &(frame->sameMsg),
+    BOOL_SIZE);
+    position += BOOL_SIZE;
+    memcpy(&char_buffer[position], 
+    frame->data,
+    FRAME_PAYLOAD_SIZE);
+    position += FRAME_PAYLOAD_SIZE;
+    memcpy(&char_buffer[position],
+    &(frame->crc),
+    CRC_SIZE);
+    position += CRC_SIZE;
+   */
   /**
     memcpy(char_buffer,
     &(frame->beginSeq),
@@ -200,65 +200,65 @@ Frame * convert_char_to_frame(char * char_buf)
   memset(frame, 0, MAX_FRAME_SIZE);
   memcpy(frame, char_buf, MAX_FRAME_SIZE);
   /**
-  memset(&(frame->src_id),
-      0,
-      sizeof(char));
-  memset(&(frame->dst_id),
-      0,
-      sizeof(char));
-  memset(&(frame->seqNum),
-      0,
-      sizeof(char));
-  memset(&(frame->ackNum),
-      0,
-      sizeof(char));
-  memset(&(frame->type),
-      0,
-      sizeof(char));
+    memset(&(frame->src_id),
+    0,
+    sizeof(char));
+    memset(&(frame->dst_id),
+    0,
+    sizeof(char));
+    memset(&(frame->seqNum),
+    0,
+    sizeof(char));
+    memset(&(frame->ackNum),
+    0,
+    sizeof(char));
+    memset(&(frame->type),
+    0,
+    sizeof(char));
 
-  memset(&(frame->sameMsg),
-      0,
-      sizeof(char));
-  memset(frame->data,
-      0,
-      sizeof(char)*sizeof(frame->data));
-  memset(&(frame->crc),
-      0,
-      sizeof(char));
-  int position = 0;
-  memcpy(&(frame->src_id),
-      char_buf,
-      sizeof(char));
-  position = position + sizeof(char);
-  memcpy(&(frame->dst_id),
-      &char_buf[position],
-      sizeof(char));
-  position = position + sizeof(char);
-  memcpy(&(frame->seqNum),
-      &char_buf[position],
-      sizeof(char));
-  position = position + sizeof(char);
-  memcpy(&(frame->ackNum),
-      &char_buf[position],
-      sizeof(char));
-  position = position + sizeof(char);
-  memcpy(&(frame->type),
-      &char_buf[position],
-      sizeof(char));
-  position = position + sizeof(char);
-  memcpy(&(frame->sameMsg),
-      &char_buf[position],
-      sizeof(char));
-  position = position + sizeof(char);
-  memcpy(frame->data, 
-      &char_buf[position],
-      sizeof(char)*sizeof(frame->data));
-  position = position + sizeof(char)*sizeof(frame->data);
-  memcpy(&(frame->crc),
-      &char_buf[position],
-      sizeof(char));
-  position = position + sizeof(char);
-  */
+    memset(&(frame->sameMsg),
+    0,
+    sizeof(char));
+    memset(frame->data,
+    0,
+    sizeof(char)*sizeof(frame->data));
+    memset(&(frame->crc),
+    0,
+    sizeof(char));
+    int position = 0;
+    memcpy(&(frame->src_id),
+    char_buf,
+    sizeof(char));
+    position = position + sizeof(char);
+    memcpy(&(frame->dst_id),
+    &char_buf[position],
+    sizeof(char));
+    position = position + sizeof(char);
+    memcpy(&(frame->seqNum),
+    &char_buf[position],
+    sizeof(char));
+    position = position + sizeof(char);
+    memcpy(&(frame->ackNum),
+    &char_buf[position],
+    sizeof(char));
+    position = position + sizeof(char);
+    memcpy(&(frame->type),
+    &char_buf[position],
+    sizeof(char));
+    position = position + sizeof(char);
+    memcpy(&(frame->sameMsg),
+    &char_buf[position],
+    sizeof(char));
+    position = position + sizeof(char);
+    memcpy(frame->data, 
+    &char_buf[position],
+    sizeof(char)*sizeof(frame->data));
+    position = position + sizeof(char)*sizeof(frame->data);
+    memcpy(&(frame->crc),
+    &char_buf[position],
+    sizeof(char));
+    position = position + sizeof(char);
+   */
   /**
     memset(&(frame->beginSeq),
     0,
@@ -321,7 +321,9 @@ void ll_split_head(LLnode ** head_ptr, size_t cut_size){
   }     
   else{       
     size_t i;       
-    Cmd* next_cmd;       
+    Cmd* next_cmd; 
+    int index = 0;
+    head_cmd->sameMsg = 1;
     for(i = cut_size; i < strlen(msg); i += cut_size) {                          
       // TODO: malloc  next, next_cmd      
       next_cmd = (Cmd *) malloc(sizeof(Cmd));
@@ -332,9 +334,30 @@ void ll_split_head(LLnode ** head_ptr, size_t cut_size){
       next_cmd->src_id = head_cmd->src_id;
       next_cmd->dst_id = head_cmd->dst_id;
       next_cmd->message = cmd_msg;
+      // sameMsg 0 means single msg, 1 means the start of message, 2 means end of message
+      if((i + cut_size) > strlen(msg)) 
+      {
+        next_cmd->sameMsg = 2;
+      }
+      else 
+      {
+        next_cmd->sameMsg = 1;
+      }
       //  TODO: fill the next_nose and add it to the linked list       
       ll_append_node(head_ptr, next_cmd);
+      index++;
     }       
     msg[cut_size] = '\0';     
   }      
+}
+
+char* concat(const char *s1, const char *s2)
+{
+  const size_t len1 = strlen(s1);
+  const size_t len2 = strlen(s2);
+  char *result = malloc(len1+len2+1);//+1 for the null-terminator
+  //in real code you would check for errors in malloc here
+  memcpy(result, s1, len1);
+  memcpy(result+len1, s2, len2+1);//+1 to copy the null-terminator
+  return result;
 }

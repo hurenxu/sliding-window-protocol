@@ -6,7 +6,7 @@ TODO: if super big data, fragament, then need to figure out how to combine them 
 /**
 TODO: CHeck the retransnit file
 */
-
+char * msg = "";
 void init_receiver(Receiver * receiver,
                    int id)
 {
@@ -71,8 +71,21 @@ void handle_incoming_msgs(Receiver * receiver,
            // TODO: When the seqNo is not the NFE
            // case 1: usual case 
            if((receiver->LAF >= receiver->NFE) && (seqNo >= receiver->NFE) && (seqNo <= receiver->LAF)) 
-           {
-             printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
+           { 
+             if(inframe->sameMsg == 0) {
+               printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
+             }
+             else if(inframe->sameMsg == 1)
+             {
+               msg = concat(msg, inframe->data);
+             }
+             else if(inframe->sameMsg == 2) 
+             {
+               msg = concat(msg, inframe->data);
+               printf("<RECV_%d>:[%s]\n", receiver->recv_id, msg);
+               msg = "";
+             }
+
              if(seqNo != receiver->NFE) 
              {
                errorDetected = 1;
@@ -86,6 +99,17 @@ void handle_incoming_msgs(Receiver * receiver,
                // store the frame in the receive window and set the recived to 1
                receiver->recvQ[receiver->LFR % BUFFER_SIZE].frame = inframe;
                receiver->recvQ[receiver->LFR % BUFFER_SIZE].received = 1;
+               // send back the ack since the sequence is in the window
+               Frame * outgoing_frame = (Frame *) malloc(sizeof(Frame));
+               outgoing_frame->src_id = receiver->recv_id;
+               outgoing_frame->dst_id = inframe->src_id;
+               outgoing_frame->ackNum = receiver->LFR; 
+               outgoing_frame->crc = 0x00;
+               char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
+               //int array_len = sizeof(outgoing_charbuf) / sizeof(outgoing_charbuf[0]);
+               int array_len = MAX_FRAME_SIZE;
+               append_crc(outgoing_charbuf, array_len);
+               ll_append_node(outgoing_frames_head_ptr, outgoing_charbuf);
              }
              else if(errorDetected == 1) 
              {
@@ -94,6 +118,7 @@ void handle_incoming_msgs(Receiver * receiver,
                receiver->recvQ[inframe->seqNum % BUFFER_SIZE].received = 1;
              }
              incoming_msgs_length = ll_get_length(receiver->input_framelist_head);
+             /**
              if(incoming_msgs_length == 0) 
              {            
                // send back the ack since the sequence is in the window
@@ -107,7 +132,7 @@ void handle_incoming_msgs(Receiver * receiver,
                int array_len = MAX_FRAME_SIZE;
                append_crc(outgoing_charbuf, array_len);
                ll_append_node(outgoing_frames_head_ptr, outgoing_charbuf);
-             }
+             }*/
            /**
            // TODO: When the seqNo is not the NFE
            // case 1: usual case 
@@ -168,6 +193,18 @@ void handle_incoming_msgs(Receiver * receiver,
                // store the frame in the receive window and set the recived to 1
                receiver->recvQ[receiver->LFR % BUFFER_SIZE].frame = inframe;
                receiver->recvQ[receiver->LFR % BUFFER_SIZE].received = 1;
+               // send back the ack since the sequence is in the window
+               Frame * outgoing_frame = (Frame *) malloc(sizeof(Frame));
+               outgoing_frame->src_id = receiver->recv_id;
+               outgoing_frame->dst_id = inframe->src_id;
+               outgoing_frame->ackNum = receiver->LFR; 
+               outgoing_frame->crc = 0x00;
+               char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
+               //int array_len = sizeof(outgoing_charbuf) / sizeof(outgoing_charbuf[0]);
+               int array_len = MAX_FRAME_SIZE;
+               append_crc(outgoing_charbuf, array_len);
+               ll_append_node(outgoing_frames_head_ptr, outgoing_charbuf);
+ 
              }
              else if(errorDetected == 1) 
              {
@@ -176,6 +213,7 @@ void handle_incoming_msgs(Receiver * receiver,
                receiver->recvQ[inframe->seqNum % BUFFER_SIZE].received = 1;
              }
              incoming_msgs_length = ll_get_length(receiver->input_framelist_head);
+             /**
              if(incoming_msgs_length == 0) 
              {            
                // send back the ack since the sequence is in the window
@@ -189,7 +227,7 @@ void handle_incoming_msgs(Receiver * receiver,
                int array_len = MAX_FRAME_SIZE;
                append_crc(outgoing_charbuf, array_len);
                ll_append_node(outgoing_frames_head_ptr, outgoing_charbuf);
-             }
+             }*/
              // send back the ack since the sequence is in the window
              /**
              Frame * outgoing_frame = (Frame *) malloc(sizeof(Frame));
