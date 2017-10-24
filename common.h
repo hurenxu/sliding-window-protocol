@@ -135,6 +135,23 @@ struct Sender_sendQ_for_each_Receiver {
 };
 typedef struct Sender_sendQ_for_each_Receiver sendArray;
 
+// sender side state
+// TODO
+struct Receiver_recvQ_for_each_Sender {
+  // initialization in the header, or else compile error
+  uint8_t NFE; // next frame expected
+  uint8_t LFR; // last frame recieved
+  uint8_t LAF; // last acceptable frame
+ 
+ struct recvQ_slot {
+    int received; // is msg valid?
+    // 1 means the message is valid and has received
+    Frame * frame;
+  } recvQ[BUFFER_SIZE];
+};
+typedef struct Receiver_recvQ_for_each_Sender recvArray;
+
+
 //Receiver and sender data structures
 struct Receiver_t
 {
@@ -148,18 +165,21 @@ struct Receiver_t
   LLnode * input_framelist_head;
 
   int recv_id;
-
+  /**
   struct recvQ_slot {
     int received; // is msg valid?
     // 1 means the message is valid and has received
     Frame * frame;
   } recvQ[BUFFER_SIZE];
-
+*/
   // receiver side state
   // initialization in the header, or else compile error
+  /**
   uint8_t NFE; // next frame expected
   uint8_t LFR; // last frame recieved
   uint8_t LAF; // last acceptable frame
+  */
+  recvArray recvArr[RECEIVER_SIZE];
 };
 
 struct Sender_t

@@ -12,13 +12,24 @@ void init_receiver(Receiver * receiver,
 {
     receiver->recv_id = id;
     receiver->input_framelist_head = NULL;
+    /**
     receiver->NFE = 0;
     receiver->LFR = -1;
     receiver->LAF = receiver->NFE + RWS - 1;
-    int i;
-    for (i = 0; i < BUFFER_SIZE; i++) 
-    {
-      receiver->recvQ[i].received = 0;
+    */
+    // debug TODO
+    int j = 0;
+    for(j = 0; j < RECEIVER_SIZE; j++) {
+      receiver->recvArr[j].NFE = 0;
+      receiver->recvArr[j].LFR = -1;
+      receiver->recvArr[j].LAF = receiver->recvArr[j].NFE + RWS - 1;
+
+      int i;
+      for (i = 0; i < BUFFER_SIZE; i++) 
+      {
+        //receiver->recvQ[i].received = 0;
+        receiver->recvArr[j].recvQ[i].received = 0;
+      }
     }
 }
 
@@ -67,10 +78,12 @@ void handle_incoming_msgs(Receiver * receiver,
         if(receiver->recv_id == inframe->dst_id) 
         {
            uint8_t seqNo = inframe->seqNum;
+           int send_id = inframe->src_id;
 
            // TODO: When the seqNo is not the NFE
            // case 1: usual case 
-           if((receiver->LAF >= receiver->NFE) && (seqNo >= receiver->NFE) && (seqNo <= receiver->LAF)) 
+           //if((receiver->LAF >= receiver->NFE) && (seqNo >= receiver->NFE) && (seqNo <= receiver->LAF)) 
+           if((receiver->recvArr[send_id].LAF >= receiver->recvArr[send_id].NFE) && (seqNo >= receiver->recvArr[send_id].NFE) && (seqNo <= receiver->recvArr[send_id].LAF)) 
            { 
            /**
              if(inframe->sameMsg == 0) {
@@ -87,19 +100,19 @@ void handle_incoming_msgs(Receiver * receiver,
                msg = "";
              }
 */
-             if(seqNo != receiver->NFE) 
+             if(seqNo != receiver->recvArr[send_id].NFE) 
              {
                errorDetected = 1;
              }
              if(errorDetected == 0) 
              {
-               receiver->NFE = seqNo + 1;
-               receiver->LFR = receiver->NFE - 1;
-               receiver->LAF = receiver->NFE + RWS - 1;
+               receiver->recvArr[send_id].NFE = seqNo + 1;
+               receiver->recvArr[send_id].LFR = receiver->recvArr[send_id].NFE - 1;
+               receiver->recvArr[send_id].LAF = receiver->recvArr[send_id].NFE + RWS - 1;
              
                // store the frame in the receive window and set the recived to 1
-               receiver->recvQ[receiver->LFR % BUFFER_SIZE].frame = inframe;
-               receiver->recvQ[receiver->LFR % BUFFER_SIZE].received = 1;
+               receiver->recvArr[send_id].recvQ[receiver->recvArr[send_id].LFR % BUFFER_SIZE].frame = inframe;
+               receiver->recvArr[send_id].recvQ[receiver->recvArr[send_id].LFR % BUFFER_SIZE].received = 1;
             if(inframe->sameMsg == 0) {
                printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
              }
@@ -119,7 +132,8 @@ void handle_incoming_msgs(Receiver * receiver,
                Frame * outgoing_frame = (Frame *) malloc(sizeof(Frame));
                outgoing_frame->src_id = receiver->recv_id;
                outgoing_frame->dst_id = inframe->src_id;
-               outgoing_frame->ackNum = receiver->LFR; 
+               //TODO
+               outgoing_frame->ackNum = receiver->recvArr[send_id].LFR; 
                outgoing_frame->crc = 0x00;
                char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
                //int array_len = sizeof(outgoing_charbuf) / sizeof(outgoing_charbuf[0]);
@@ -130,8 +144,8 @@ void handle_incoming_msgs(Receiver * receiver,
              else if(errorDetected == 1) 
              {
                // store the frame in the receive window and set the recived to 1
-               receiver->recvQ[inframe->seqNum % BUFFER_SIZE].frame = inframe;
-               receiver->recvQ[inframe->seqNum % BUFFER_SIZE].received = 1;
+               receiver->recvArr[send_id].recvQ[inframe->seqNum % BUFFER_SIZE].frame = inframe;
+               receiver->recvArr[send_id].recvQ[inframe->seqNum % BUFFER_SIZE].received = 1;
              }
              incoming_msgs_length = ll_get_length(receiver->input_framelist_head);
              /**
@@ -193,22 +207,22 @@ void handle_incoming_msgs(Receiver * receiver,
              */
            }
            //case 2: sequence number wrap around
-           else if((receiver->LAF < receiver->NFE) && ((seqNo >= receiver->NFE) || (seqNo <= receiver->LAF))) 
+           else if((receiver->recvArr[send_id].LAF < receiver->recvArr[send_id].NFE) && ((seqNo >= receiver->recvArr[send_id].NFE) || (seqNo <= receiver->recvArr[send_id].LAF))) 
            {
              //printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
-             if(seqNo != receiver->NFE) 
+             if(seqNo != receiver->recvArr[send_id].NFE) 
              {
                errorDetected = 1;
              }
              if(errorDetected == 0) 
              {
-               receiver->NFE = seqNo + 1;
-               receiver->LFR = receiver->NFE - 1;
-               receiver->LAF = receiver->NFE + RWS - 1;
+               receiver->recvArr[send_id].NFE = seqNo + 1;
+               receiver->recvArr[send_id].LFR = receiver->recvArr[send_id].NFE - 1;
+               receiver->recvArr[send_id].LAF = receiver->recvArr[send_id].NFE + RWS - 1;
              
                // store the frame in the receive window and set the recived to 1
-               receiver->recvQ[receiver->LFR % BUFFER_SIZE].frame = inframe;
-               receiver->recvQ[receiver->LFR % BUFFER_SIZE].received = 1;
+               receiver->recvArr[send_id].recvQ[receiver->recvArr[send_id].LFR % BUFFER_SIZE].frame = inframe;
+               receiver->recvArr[send_id].recvQ[receiver->recvArr[send_id].LFR % BUFFER_SIZE].received = 1;
             if(inframe->sameMsg == 0) {
                printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
              }
@@ -228,7 +242,7 @@ void handle_incoming_msgs(Receiver * receiver,
                Frame * outgoing_frame = (Frame *) malloc(sizeof(Frame));
                outgoing_frame->src_id = receiver->recv_id;
                outgoing_frame->dst_id = inframe->src_id;
-               outgoing_frame->ackNum = receiver->LFR; 
+               outgoing_frame->ackNum = receiver->recvArr[send_id].LFR; 
                outgoing_frame->crc = 0x00;
                char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
                //int array_len = sizeof(outgoing_charbuf) / sizeof(outgoing_charbuf[0]);
@@ -239,8 +253,8 @@ void handle_incoming_msgs(Receiver * receiver,
              else if(errorDetected == 1) 
              {
                // store the frame in the receive window and set the recived to 1
-               receiver->recvQ[inframe->seqNum % BUFFER_SIZE].frame = inframe;
-               receiver->recvQ[inframe->seqNum % BUFFER_SIZE].received = 1;
+               receiver->recvArr[send_id].recvQ[inframe->seqNum % BUFFER_SIZE].frame = inframe;
+               receiver->recvArr[send_id].recvQ[inframe->seqNum % BUFFER_SIZE].received = 1;
              }
              incoming_msgs_length = ll_get_length(receiver->input_framelist_head);
              /**
