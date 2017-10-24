@@ -72,6 +72,7 @@ void handle_incoming_msgs(Receiver * receiver,
            // case 1: usual case 
            if((receiver->LAF >= receiver->NFE) && (seqNo >= receiver->NFE) && (seqNo <= receiver->LAF)) 
            { 
+           /**
              if(inframe->sameMsg == 0) {
                printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
              }
@@ -85,7 +86,7 @@ void handle_incoming_msgs(Receiver * receiver,
                printf("<RECV_%d>:[%s]\n", receiver->recv_id, msg);
                msg = "";
              }
-
+*/
              if(seqNo != receiver->NFE) 
              {
                errorDetected = 1;
@@ -99,7 +100,22 @@ void handle_incoming_msgs(Receiver * receiver,
                // store the frame in the receive window and set the recived to 1
                receiver->recvQ[receiver->LFR % BUFFER_SIZE].frame = inframe;
                receiver->recvQ[receiver->LFR % BUFFER_SIZE].received = 1;
+            if(inframe->sameMsg == 0) {
+               printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
+             }
+             else if(inframe->sameMsg == 1)
+             {
+               msg = concat(msg, inframe->data);
+             }
+             else if(inframe->sameMsg == 2) 
+             {
+               msg = concat(msg, inframe->data);
+               printf("<RECV_%d>:[%s]\n", receiver->recv_id, msg);
+               msg = "";
+             }
+
                // send back the ack since the sequence is in the window
+               // TODO
                Frame * outgoing_frame = (Frame *) malloc(sizeof(Frame));
                outgoing_frame->src_id = receiver->recv_id;
                outgoing_frame->dst_id = inframe->src_id;
@@ -179,7 +195,7 @@ void handle_incoming_msgs(Receiver * receiver,
            //case 2: sequence number wrap around
            else if((receiver->LAF < receiver->NFE) && ((seqNo >= receiver->NFE) || (seqNo <= receiver->LAF))) 
            {
-             printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
+             //printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
              if(seqNo != receiver->NFE) 
              {
                errorDetected = 1;
@@ -193,7 +209,22 @@ void handle_incoming_msgs(Receiver * receiver,
                // store the frame in the receive window and set the recived to 1
                receiver->recvQ[receiver->LFR % BUFFER_SIZE].frame = inframe;
                receiver->recvQ[receiver->LFR % BUFFER_SIZE].received = 1;
+            if(inframe->sameMsg == 0) {
+               printf("<RECV_%d>:[%s]\n", receiver->recv_id, inframe->data);
+             }
+             else if(inframe->sameMsg == 1)
+             {
+               msg = concat(msg, inframe->data);
+             }
+             else if(inframe->sameMsg == 2) 
+             {
+               msg = concat(msg, inframe->data);
+               printf("<RECV_%d>:[%s]\n", receiver->recv_id, msg);
+               msg = "";
+             }
+
                // send back the ack since the sequence is in the window
+               // TODO
                Frame * outgoing_frame = (Frame *) malloc(sizeof(Frame));
                outgoing_frame->src_id = receiver->recv_id;
                outgoing_frame->dst_id = inframe->src_id;
@@ -204,7 +235,6 @@ void handle_incoming_msgs(Receiver * receiver,
                int array_len = MAX_FRAME_SIZE;
                append_crc(outgoing_charbuf, array_len);
                ll_append_node(outgoing_frames_head_ptr, outgoing_charbuf);
- 
              }
              else if(errorDetected == 1) 
              {

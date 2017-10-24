@@ -16,6 +16,7 @@ void init_sender(Sender * sender, int id)
       sender->sendArr[i].LAR = -1;
       sender->sendArr[i].LFS = -1;
     }
+    sender->start = 0;
 }
 
 void calculate_timeout(struct timeval * timeout){ 
@@ -69,12 +70,66 @@ void handle_incoming_acks(Sender * sender,
       //printf("<SEND_%d>:[%s] ACK\n", sender->send_id, ackFrame->data);
       //    5) Do sliding window protocol for sender/receiver pair   
       // the window is from [LAR+1, LFS]
+      // TODO: wrap around
+      if(sender->sendArr[recv_id].LFS < sender->sendArr[recv_id].LAR) 
+      {
+        if(sender->start == 0) 
+        {
+        
+        }
+        else 
+        {
+          sender->sendArr[recv_id].LFS += BUFFER_SIZE;
+        }
+      }
+      uint8_t possible = sender->inputFrameSize - (sender->sendArr[recv_id].LFS - sender->sendArr[recv_id].LAR);
+      // TODO: wrap around
+      if(sender->start == 1) {
+        sender->sendArr[recv_id].LFS %= BUFFER_SIZE;
+      }
+      uint8_t previousLAR = sender->sendArr[recv_id].LAR;
+      // TODO: Wrap around
+      uint8_t ackReceived = ackFrame->ackNum % BUFFER_SIZE - sender->sendArr[recv_id].LAR;
+      // TODO: Wrap around
+      if(ackFrame->ackNum % BUFFER_SIZE < sender->sendArr[recv_id].LAR) 
+      {
+        if(sender->start == 0) 
+        {
+        
+        }
+        else 
+        {
+          ackReceived = ackFrame->ackNum % BUFFER_SIZE + BUFFER_SIZE - sender->sendArr[recv_id].LAR;
+        }
+      }
       sender->sendArr[recv_id].LAR = ackFrame->ackNum;
+      uint8_t ackNo = ackFrame->ackNum;
+      // TODO: Wrap Around
+      if(sender->sendArr[recv_id].LAR >= BUFFER_SIZE) 
+      {
+        if(sender->start == 0) 
+        {
+        
+        }
+        else 
+        {
+          sender->sendArr[recv_id].LAR %= BUFFER_SIZE;
+        }
+      }
       // deal with retransmit
       // last frame ack in the window should be LAR, check whether it equals to
       // LFS, since LFS should be the last acknoledgement receive.
-      if(sender->sendArr[recv_id].LAR != sender->sendArr[recv_id].LFS) 
-      {
+      //TODO: debugging
+      //if(sender->sendArr[recv_id].LAR != sender->sendArr[recv_id].LFS) 
+      //if(sender->sendArr[recv_id].LAR != sender->sendArr[recv_id].LFS) 
+      //{
+      //uint8_t previousLAR = sender->sendArr[recv_id].LAR;
+      if((previousLAR <= sender->sendArr[recv_id].LFS) && (ackNo > previousLAR) && (ackNo <= sender->sendArr[recv_id].LFS)) 
+      { 
+        sender->inputFrameSize = sender->inputFrameSize - ackReceived;
+ /**
+         // TODO
+         //ackReceived = sender->sendArr[recv_id].LFS - sender->sendArr[recv_id].LAR;
          // first find the window inside the senderArr
          sendArray sendBuffer = sender->sendArr[recv_id];
          // send the next frame which squence number is right next to the LAR
@@ -94,20 +149,71 @@ void handle_incoming_acks(Sender * sender,
          // after sending out the missing frame, upate the LAR, since we need to
          // do the selective transmission
          sender->sendArr[recv_id].LAR = sender->sendArr[recv_id].LFS;
+         // check how many inputFrameSize received ack
+         */
+      }
+      else if((previousLAR > sender->sendArr[recv_id].LFS) && ((ackNo > previousLAR) || (ackNo <= sender->sendArr[recv_id].LFS))) 
+      {
+        sender->inputFrameSize = sender->inputFrameSize - ackReceived;
       }
       else 
       {
-        sender->inputFrameSize--;
+         //TODO
+         //ackReceived = sender->sendArr[recv_id].LFS - sender->sendArr[recv_id].LAR;
+         // first find the window inside the senderArr
+         sendArray sendBuffer = sender->sendArr[recv_id];
+         // send the next frame which squence number is right next to the LAR
+         int seqNum = sender->sendArr[recv_id].LAR + 1;
+         struct sendQ_slot *slot;
+         //This is probably ONLY one step you want
+         Frame * outgoing_frame = (Frame *) malloc (sizeof(Frame));
+	       //slot = sendQ[seqNum];
+         slot = &(sendBuffer.sendQ[seqNum % BUFFER_SIZE]);
+         outgoing_frame = slot->frame;
+
+         //Convert the message to the outgoing_charbuf
+         char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
+         ll_append_node(outgoing_frames_head_ptr,
+                       outgoing_charbuf);
+         //free(outgoing_frame);
+         // after sending out the missing frame, upate the LAR, since we need to
+         // do the selective transmission
+         sender->sendArr[recv_id].LAR = sender->sendArr[recv_id].LFS;
+         // check how many inputFrameSize received ack
+
       }
+      /**
+      else 
+      {
+        //sender->inputFrameSize--;
+        sender->inputFrameSize = sender->inputFrameSize - ackReceived;
+      }*/
       // not run the program if all the frames have been sent
-      if(sender->inputFrameSize == 0) 
+      //if(sender->inputFrameSize == 0) 
+      if(sender->inputFrameSize <= 0) 
       {
         // continue, not run anything
         continue;
       }
       //LFS += SWS;
       // size that the send window can move
+      // TODO: Wrap around
+      if(sender->sendArr[recv_id].LFS < sender->sendArr[recv_id].LAR) 
+      {
+        if(sender->start == 0) 
+        {
+        
+        }
+        else 
+        {
+          sender->sendArr[recv_id].LFS += BUFFER_SIZE;
+        }
+      }
       uint8_t offset = SWS - (sender->sendArr[recv_id].LFS - sender->sendArr[recv_id].LAR);
+      // TODO: Wrap around
+      if(sender->start == 1) {
+        sender->sendArr[recv_id].LFS %= BUFFER_SIZE;
+      }
       /**
       if(offset > sender->inputFrameSize) 
       {
@@ -123,11 +229,22 @@ void handle_incoming_acks(Sender * sender,
         //offset = sender->inputFrameSize;
       //}
       //printf("%d offset & %d inputFrameSize\n", offset, sender->inputFrameSize);
-      //if(sender->inputFrameSize <) 
-      //{
-      
-      //}
+      //TODO: check at the end when the size is less than the input frame size, 
+      // what whould be the possible sliding window to update
+      if(offset > possible) 
+      {
+        //offset = sender->inputFrameSize;
+        offset = possible;
+        sender->inputFrameSize = sender->inputFrameSize - ackReceived;
+      }
       sender->sendArr[recv_id].LFS += offset;
+      //TODO: wrap around
+      if(sender->sendArr[recv_id].LFS >= BUFFER_SIZE) 
+      {
+        if(sender->start == 1) {
+          sender->sendArr[recv_id].LFS %= BUFFER_SIZE;
+        }
+      }
       // the window should start from LAR + 1, and end in LFS
       // send the frame from LAR+1, LFS
       // case 1 usual case
@@ -193,7 +310,7 @@ void handle_input_cmds(Sender * sender,
     //    2) Convert to Frame *
     //    3) Set up the frame according to the sliding window protocol *
     //    4) Compute CRC and add CRC to Frame *
-
+    sender->start = 1;
     int input_cmd_length = ll_get_length(sender->input_cmdlist_head);
     
         
@@ -235,7 +352,7 @@ void handle_input_cmds(Sender * sender,
             outgoing_frame->src_id = outgoing_cmd->src_id;
             outgoing_frame->dst_id = outgoing_cmd->dst_id;
             if((outgoing_cmd->sameMsg != 2) && (outgoing_cmd->sameMsg != 1)) {
-              outgoing_frame->sameMsg = 0;
+              outgoing_frame->sameMsg = 0; 
             }
             else {
               outgoing_frame->sameMsg = outgoing_cmd->sameMsg;
@@ -260,9 +377,18 @@ void handle_input_cmds(Sender * sender,
             calculate_timeout(slot->timeout);
             //At this point, we don't need the outgoing_cmd
             sendFrames++;
-            sender->inputFrameSize = sendFrames;
+            //sender->inputFrameSize = sendFrames;
+            sender->inputFrameSize++;
             if(sendFrames <= RWS) {
               sender->sendArr[recv_id].LFS = sender->sendArr[recv_id].LFS + 1;
+              // TODO: Wrap Around
+              if(sender->sendArr[recv_id].LFS >= BUFFER_SIZE) 
+              {
+                if(sender->start == 1) {
+                  sender->sendArr[recv_id].LFS %= BUFFER_SIZE;
+                }
+              }
+              //sender->sendArr[recv_id].LFS = outgoing_frame->seqNum;
               ll_append_node(outgoing_frames_head_ptr,
                             outgoing_charbuf);
             }
@@ -293,6 +419,13 @@ void handle_timedout_frames(Sender * sender,
       {
         continue;
       }
+
+      if(LFS > MAX_FRAME_SIZE) 
+      {
+        continue;
+      }
+
+      //TODO: for wrap around if the LFS is less than LAR then just + the buffersize
       // check all the frame that is afte the LAR, and before the LFS
       // the same idea as this for(int j = LAR; j <= LFS; j++), but
       // avoid wrap around

@@ -176,6 +176,7 @@ struct Sender_t
   LLnode * input_framelist_head;
   int send_id;
   int inputFrameSize;
+  int start;
 
   sendArray sendArr[RECEIVER_SIZE];
 };
