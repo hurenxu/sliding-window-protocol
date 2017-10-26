@@ -13,8 +13,10 @@ void init_sender(Sender * sender, int id)
     for(i = 0; i < RECEIVER_SIZE; i++) 
     {
       sender->sendArr[i].seq = -1;
-      sender->sendArr[i].LAR = -1;
-      sender->sendArr[i].LFS = -1;
+      //sender->sendArr[i].LAR = -1;
+      sender->sendArr[i].LAR = 15;
+      //sender->sendArr[i].LFS = -1;
+      sender->sendArr[i].LFS = 15;
     }
     sender->start = 0;
 }
@@ -82,7 +84,11 @@ void handle_incoming_acks(Sender * sender,
           sender->sendArr[recv_id].LFS += BUFFER_SIZE;
         }
       }
-      uint8_t possible = sender->inputFrameSize - (sender->sendArr[recv_id].LFS - sender->sendArr[recv_id].LAR);
+      int possible = sender->inputFrameSize - (sender->sendArr[recv_id].LFS - sender->sendArr[recv_id].LAR);
+      if(possible < 0) 
+      {
+        possible = 0;
+      }
       // TODO: wrap around
       if(sender->start == 1) {
         sender->sendArr[recv_id].LFS %= BUFFER_SIZE;
@@ -91,7 +97,7 @@ void handle_incoming_acks(Sender * sender,
       // TODO: Wrap around
       uint8_t ackReceived = ackFrame->ackNum % BUFFER_SIZE - sender->sendArr[recv_id].LAR;
       // TODO: Wrap around
-      if(ackFrame->ackNum % BUFFER_SIZE < sender->sendArr[recv_id].LAR) 
+      if(ackFrame->ackNum % BUFFER_SIZE == 0) 
       {
         if(sender->start == 0) 
         {
@@ -99,9 +105,11 @@ void handle_incoming_acks(Sender * sender,
         }
         else 
         {
+          //sender->sendArr[rev_id].LAR = 15;
           ackReceived = ackFrame->ackNum % BUFFER_SIZE + BUFFER_SIZE - sender->sendArr[recv_id].LAR;
         }
       }
+
       sender->sendArr[recv_id].LAR = ackFrame->ackNum;
       uint8_t ackNo = ackFrame->ackNum;
       // TODO: Wrap Around
@@ -262,6 +270,7 @@ void handle_incoming_acks(Sender * sender,
             outgoing_frame = slot->frame;
 
             //Convert the message to the outgoing_charbuf
+
             char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
             ll_append_node(outgoing_frames_head_ptr,
                            outgoing_charbuf);
@@ -281,7 +290,7 @@ void handle_incoming_acks(Sender * sender,
 	          //slot = sendQ[i];
             slot = &(sendBuffer.sendQ[i % BUFFER_SIZE]);
             outgoing_frame = slot->frame;
-
+            
             //Convert the message to the outgoing_charbuf
             char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
             ll_append_node(outgoing_frames_head_ptr,
@@ -320,6 +329,11 @@ void handle_input_cmds(Sender * sender,
     int sendFrames = 0;
     while (input_cmd_length > 0)
     {
+        // break the loop if the buffer is full
+        if(sender->inputFrameSize > BUFFER_SIZE) 
+        {
+          break;
+        }
         //Pop a node off and update the input_cmd_length
         LLnode * ll_input_cmd_node = ll_pop_node(&sender->input_cmdlist_head);
         input_cmd_length = ll_get_length(sender->input_cmdlist_head);
