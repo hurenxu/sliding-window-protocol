@@ -243,6 +243,7 @@ void handle_incoming_acks(Sender * sender,
       {
         //offset = sender->inputFrameSize;
         offset = possible;
+        // TODO TODO TODO
         sender->inputFrameSize = sender->inputFrameSize - ackReceived;
       }
       sender->sendArr[recv_id].LFS += offset;

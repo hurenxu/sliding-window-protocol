@@ -32,11 +32,21 @@ make clean; make -j4 tritontalk
 echo "Done rebuilding tritontalk"
 echo
 
+
+## Test Case 5
+#(echo "msg 0 0 Maecenas eu nibh eu metus ultricies vulputate sed ut nisl. Nullamollis massa diam, et congue nunc molestie non. Ut pharetra, neque quis pretiumfermentum, neque eros tempus ipsum, at dignissim leo urna ut velit. Quisque erosmassa, fermentum et metus non, maximus blandit purus. Aliquam erat volutpat.Nulla tincidunt orci in est vehicula fermentum. In scelerisque tempus aliquam.Vestibulum vulputate rutrum mauris et feugiat. Duis non velit consequat, aliquetneque sit amet, pretium nisl. Maecenas laoreet arcu a massa scelerisque euismod.Nam a lacus semper enim gravida pulvinar quis ac dui. Quisque vitae risus sitamet lorem imperdiet ornare ut quis libero. Vivamus mollis luctus massa,tincidunt auctor mauris sollicitudin eget. Pellentesque congue justo purus, investibulum felis convallis non. Etiam consectetur aliquet ante sit ametmalesuada. Maecenas volutpat porttitor tortor, eu accumsan magna hendrerit id. ... Ut pharetra, neque quis pretiumfermentum, neque eros tempus ipsum, at dignissim leo urna ut velit"; echo "exit") | ./tritontalk -d 0.2 -c 0.2 -r 1 -s 1 > .output.5 2> .debug_output.5
+echo -n "Test case 5: Sending HELL LONG (with corrupt probability of 20% and drop probability of 20%) and expecting receiver to print them out in order: "
+(echo "msg 0 0 Maecenas eu nibh eu metus ultricies vulputate sed ut nisl. Nullamollis massa diam, et congue nunc molestie non. Ut pharetra, neque quis pretiumfermentum, neque eros tempus ipsum, at dignissim leo urna ut velit. Quisque erosmassa, fermentum et metus non, maximus blandit purus. Aliquam erat volutpat.Nulla tincidunt orci in est vehicula fermentum. In scelerisque tempus aliquam.Vestibulum vulputate rutrum mauris et feugiat. Duis non velit consequat, aliquetneque sit amet, pretium nisl. Maecenas laoreet arcu a massa scelerisque euismod.Nam a lacus semper enim gravida pulvinar quis ac dui. Quisque vitae risus sitamet lorem imperdiet ornare ut quis libero. Vivamus mollis luctus massa,tincidunt auctor mauris sollicitudin eget. Pellentesque congue justo purus, investibulum felis convallis non. Etiam consectetur aliquet ante sit ametmalesuada. Maecenas volutpat porttitor tortor, eu accumsan magna hendrerit id. ... Ut pharetra, neque quis pretiumfermentum, neque eros tempus ipsum, at dignissim leo urna ut velit"; echo "exit") | ./tritontalk -r 1 -s 1
+
+(echo "<RECV_0>:Maecenas eu nibh eu metus ultricies vulputate sed ut nisl. Nullamollis massa diam, et congue nunc molestie non. Ut pharetra, neque quis pretiumfermentum, neque eros tempus ipsum, at dignissim leo urna ut velit. Quisque erosmassa, fermentum et metus non, maximus blandit purus. Aliquam erat volutpat.Nulla tincidunt orci in est vehicula fermentum. In scelerisque tempus aliquam.Vestibulum vulputate rutrum mauris et feugiat. Duis non velit consequat, aliquetneque sit amet, pretium nisl. Maecenas laoreet arcu a massa scelerisque euismod.Nam a lacus semper enim gravida pulvinar quis ac dui. Quisque vitae risus sitamet lorem imperdiet ornare ut quis libero. Vivamus mollis luctus massa,tincidunt auctor mauris sollicitudin eget. Pellentesque congue justo purus, investibulum felis convallis non. Etiam consectetur aliquet ante sit ametmalesuada. Maecenas volutpat porttitor tortor, eu accumsan magna hendrerit id. ... Ut pharetra, neque quis pretiumfermentum, neque eros tempus ipsum, at dignissim leo urna ut velit") > .expected_output.5
+
+check_output 4
+
 ## Test Case 3
 #echo "exit") | ./tritontalk -c 0.6 -r 1 -s 1 > .output.3 2> .debug_output.3
 echo -n "Test case 3: Sending 500 packets (with corrupt probability of 40%) and expecting receiver to print them out in order: "
-(sleep 0.5; for i in `seq 1 100`; do echo "msg 0 0 Packet: $i"; sleep 0.1; done;sleep 20; 
-echo "exit") | ./tritontalk -c 0.2 -r 1 -s 1
+(sleep 0.5; for i in `seq 1 100`; do echo "msg 0 0 Packet: $i"; sleep 0.2; done;sleep 5; 
+echo "exit") | ./tritontalk -c 0.4 -r 1 -s 1
 
 (for i in `seq 1 100`; do echo "<RECV_0>:[Packet: $i]"; done) > .expected_output.3
 
@@ -44,23 +54,15 @@ check_output 3
 
 
 ## Test Case 4
-##(sleep 0.5; for i in `seq 1 100`; do echo "msg 0 0 Packet: $i"; sleep 0.1; done; sleep 15; echo "exit") | ./tritontalk -d 0.2 -c 0.2 -r 1 -s 1 > .output.4 2> .debug_output.4
-#echo -n "Test case 4: Sending 600 packets (with corrupt probability of 20% and drop probability of 20%) and expecting receiver to print them out in order: "
-#(sleep 0.5; for i in `seq 1 100`; do echo "msg 0 0 Packet: $i"; sleep 0.1; done; sleep 10; echo "exit") | ./tritontalk -d 0.2 -c 0.2 -r 1 -s 1
+#(sleep 0.5; for i in `seq 1 100`; do echo "msg 0 0 Packet: $i"; sleep 0.1; done; sleep 15; echo "exit") | ./tritontalk -d 0.2 -c 0.2 -r 1 -s 1 > .output.4 2> .debug_output.4
+echo -n "Test case 4: Sending 600 packets (with corrupt probability of 20% and drop probability of 20%) and expecting receiver to print them out in order: "
+(sleep 0.5; for i in `seq 1 100`; do echo "msg 0 0 Packet: $i"; sleep 0.2; done; sleep 5; echo "exit") | ./tritontalk -d 0.2 -c 0.2 -r 1 -s 1
 
-#(for i in `seq 1 100`; do echo "<RECV_0>:[Packet: $i]"; done) > .expected_output.4
-
-#check_output 4
-
-
-
-## Test Case 5
-echo -n "Test case 5: Sending HELL LONG (with corrupt probability of 20% and drop probability of 20%) and expecting receiver to print them out in order: "
-(echo "msg 0 0 Maecenas eu nibh eu metus ultricies vulputate sed ut nisl. Nullamollis massa diam, et congue nunc molestie non. Ut pharetra, neque quis pretiumfermentum, neque eros tempus ipsum, at dignissim leo urna ut velit. Quisque erosmassa, fermentum et metus non, maximus blandit purus. Aliquam erat volutpat.Nulla tincidunt orci in est vehicula fermentum. In scelerisque tempus aliquam.Vestibulum vulputate rutrum mauris et feugiat. Duis non velit consequat, aliquetneque sit amet, pretium nisl. Maecenas laoreet arcu a massa scelerisque euismod.Nam a lacus semper enim gravida pulvinar quis ac dui. Quisque vitae risus sitamet lorem imperdiet ornare ut quis libero. Vivamus mollis luctus massa,tincidunt auctor mauris sollicitudin eget. Pellentesque congue justo purus, investibulum felis convallis non. Etiam consectetur aliquet ante sit ametmalesuada. Maecenas volutpat porttitor tortor, eu accumsan magna hendrerit id. ... Ut pharetra, neque quis pretiumfermentum, neque eros tempus ipsum, at dignissim leo urna ut velit"; echo "exit") | ./tritontalk -d 0.2 -c 0.2 -r 1 -s 1 > .output.5 2> .debug_output.5
-
-(echo "<RECV_0>:Maecenas eu nibh eu metus ultricies vulputate sed ut nisl. Nullamollis massa diam, et congue nunc molestie non. Ut pharetra, neque quis pretiumfermentum, neque eros tempus ipsum, at dignissim leo urna ut velit. Quisque erosmassa, fermentum et metus non, maximus blandit purus. Aliquam erat volutpat.Nulla tincidunt orci in est vehicula fermentum. In scelerisque tempus aliquam.Vestibulum vulputate rutrum mauris et feugiat. Duis non velit consequat, aliquetneque sit amet, pretium nisl. Maecenas laoreet arcu a massa scelerisque euismod.Nam a lacus semper enim gravida pulvinar quis ac dui. Quisque vitae risus sitamet lorem imperdiet ornare ut quis libero. Vivamus mollis luctus massa,tincidunt auctor mauris sollicitudin eget. Pellentesque congue justo purus, investibulum felis convallis non. Etiam consectetur aliquet ante sit ametmalesuada. Maecenas volutpat porttitor tortor, eu accumsan magna hendrerit id. ... Ut pharetra, neque quis pretiumfermentum, neque eros tempus ipsum, at dignissim leo urna ut velit") > .expected_output.5
+(for i in `seq 1 100`; do echo "<RECV_0>:[Packet: $i]"; done) > .expected_output.4
 
 check_output 4
+
+
 
 echo
 echo "Completed test cases"
