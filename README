@@ -10,18 +10,29 @@ http://cseweb.ucsd.edu/classes/fa17/cse123-a/project.html
 Name: Renxu Hu
 PID: A92067683
 File: README
+All the high level description is writing here, please check
 
-Task 1
-	The way that I am designing for the format is using HDLC frame format which requires two byte
-  sequence to mentioning the beginning sequence and the ending sequence. The header is 2 bytes
-  which contains HDLC address and HDLC control field. And then 2 bytes for the CRC. So in total,
-  the size for encapsulate size is 6.
-  However, the ending sequence also represent the beginning sequence of the next frame. So the 
-  encapsulate size is 5, but I will set the size to be 6. Since I can find the ending sequence
-  of the previous frame, and set it to be the beginning of the current frame. So in total, 
-  still 6 bytes.
-  So the frame is actually with the format of 
-  beginSeq address_field control_field payload crc endSeq
+Clarification and Description of the Program
+First of all, my program runs a little bit slower, and the reason for that is
+I was using a relative different approach. However, the main approach is the 
+same because I am using selective retransmission. However, instead of using 
+the timeout as the main tool for retransmission, I am processing the linked 
+list in the handle incoming acks. So for instance, if the message conrrupted,
+then I handle the case to check what ack number has returned. I will usually
+send back ack number + 1 frame to the receiver. For instance, if sender sends
+frame 1, receiver sends back ack 1; later sender sends frame 2~4, receiver 
+sends back ack 2 since 3 is lost. So the sender sends back frame 3. I am 
+using the timeout only when the ack is corrupted. The reason why it is slower
+since I am heavily run on memory, and also the linked list is heavier to 
+manipulate. 
+If I am having corrupted incoming ack, my timeout will figure out and then 
+send back the frame, if received before, the receiver will ignore it.
 
-Task 2
-  
+Frame:
+My frame is in total 64 bytes, with 7 bytes encapsulated header, and 57 bytes 
+data.
+It has source id, destination id, seqence number and ack number, sameMsg means
+whether the data is in the same message as previous. If it is, then it will be
+1, if it is not, then it is 0. There is one byte (char) which is used to check
+the corruption of the frame. First six bytes are all uint8_t type which will be
+automatically wrapped around at 255.
