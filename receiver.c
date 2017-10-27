@@ -130,6 +130,7 @@ void handle_incoming_msgs(Receiver * receiver,
                // send back the ack since the sequence is in the window
                // TODO
                Frame * outgoing_frame = (Frame *) malloc(sizeof(Frame));
+               memset(outgoing_frame, 0, sizeof(Frame));
                outgoing_frame->src_id = receiver->recv_id;
                outgoing_frame->dst_id = inframe->src_id;
                //TODO
@@ -148,64 +149,7 @@ void handle_incoming_msgs(Receiver * receiver,
                receiver->recvArr[send_id].recvQ[inframe->seqNum % BUFFER_SIZE].received = 1;
              }
              incoming_msgs_length = ll_get_length(receiver->input_framelist_head);
-             /**
-             if(incoming_msgs_length == 0) 
-             {            
-               // send back the ack since the sequence is in the window
-               Frame * outgoing_frame = (Frame *) malloc(sizeof(Frame));
-               outgoing_frame->src_id = receiver->recv_id;
-               outgoing_frame->dst_id = inframe->src_id;
-               outgoing_frame->ackNum = receiver->LFR; 
-               outgoing_frame->crc = 0x00;
-               char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
-               //int array_len = sizeof(outgoing_charbuf) / sizeof(outgoing_charbuf[0]);
-               int array_len = MAX_FRAME_SIZE;
-               append_crc(outgoing_charbuf, array_len);
-               ll_append_node(outgoing_frames_head_ptr, outgoing_charbuf);
-             }*/
-           /**
-           // TODO: When the seqNo is not the NFE
-           // case 1: usual case 
-           if((receiver->LAF >= receiver->NFE) && (seqNo >= receiver->NFE) && (seqNo <= receiver->LAF)) 
-           {
-             // send back the ack since the sequence is in the window
-             Frame * outgoing_frame = (Frame *) malloc(sizeof(Frame));
-             outgoing_frame->src_id = receiver->recv_id;
-             outgoing_frame->dst_id = inframe->src_id;
-             if(seqNo != receiver->NFE) 
-             {
-               outgoing_frame->ackNum = inframe->LFR; 
-               receiver->NFE = receiver->NFE;
-               receiver->LFR = receiver->LFR;
-               receiver->LAF = receiver->LAF;
-             }
-             else 
-             {
-               outgoing_frame->ackNum = inframe->seqNum; 
-               receiver->LAF += 1; 
-               receiver->NFE += 1; 
-               receiver->LFR += 1; 
-             }
-             outgoing_frame->seqNum = inframe->seqNum; 
-             outgoing_frame->crc = 0x00;
-             //strcpy(outgoing_frame->data, inframe->data);
-             char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
-             int array_len = sizeof(outgoing_charbuf) / sizeof(outgoing_charbuf[0]);
-             append_crc(outgoing_charbuf, array_len);
-             outgoing_frame = convert_char_to_frame(outgoing_charbuf);
-             ll_append_node(outgoing_frames_head_ptr, outgoing_charbuf);
-             // TODO: Free or not?
-
-
-
-
-
-             // store the frame in the receive window and set the recived to 1
-             receiver->recvQ[outgoing_frame->ackNum % BUFFER_SIZE].frame = outgoing_frame;
-             receiver->recvQ[outgoing_frame->ackNum % BUFFER_SIZE].received = 1;
-             // update the number for the window (slding window)
-             */
-           }
+          }
            //case 2: sequence number wrap around
            else if((receiver->recvArr[send_id].LAF < receiver->recvArr[send_id].NFE) && ((seqNo >= receiver->recvArr[send_id].NFE) || (seqNo <= receiver->recvArr[send_id].LAF))) 
            {
@@ -257,43 +201,7 @@ void handle_incoming_msgs(Receiver * receiver,
                receiver->recvArr[send_id].recvQ[inframe->seqNum % BUFFER_SIZE].received = 1;
              }
              incoming_msgs_length = ll_get_length(receiver->input_framelist_head);
-             /**
-             if(incoming_msgs_length == 0) 
-             {            
-               // send back the ack since the sequence is in the window
-               Frame * outgoing_frame = (Frame *) malloc(sizeof(Frame));
-               outgoing_frame->src_id = receiver->recv_id;
-               outgoing_frame->dst_id = inframe->src_id;
-               outgoing_frame->ackNum = receiver->LFR; 
-               outgoing_frame->crc = 0x00;
-               char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
-               //int array_len = sizeof(outgoing_charbuf) / sizeof(outgoing_charbuf[0]);
-               int array_len = MAX_FRAME_SIZE;
-               append_crc(outgoing_charbuf, array_len);
-               ll_append_node(outgoing_frames_head_ptr, outgoing_charbuf);
-             }*/
-             // send back the ack since the sequence is in the window
-             /**
-             Frame * outgoing_frame = (Frame *) malloc(sizeof(Frame));
-             outgoing_frame->src_id = receiver->recv_id;
-             outgoing_frame->dst_id = inframe->src_id;
-             outgoing_frame->ackNum = inframe->seqNum; 
-             outgoing_frame->type = 1; 
-             strcpy(outgoing_frame->data, inframe->data);
-             char * outgoing_charbuf = convert_frame_to_char(outgoing_frame);
-             int array_len = sizeof(outgoing_charbuf) / sizeof(outgoing_charbuf[0]);
-             append_crc(outgoing_charbuf, array_len);
-             outgoing_frame = convert_char_to_frame(outgoing_charbuf);
-             ll_append_node(outgoing_frames_head_ptr, outgoing_charbuf);
-             // TODO: Free or not?
-             // store the frame in the receive window and set the recived to 1
-             receiver->recvQ[outgoing_frame->ackNum % BUFFER_SIZE].frame = outgoing_frame;
-             receiver->recvQ[outgoing_frame->ackNum % BUFFER_SIZE].received = 1;
-             // update the number for the window (slding window)
-             receiver->LAF += 1; 
-             receiver->NFE += 1; 
-             receiver->LFR += 1; */
-           }
+          }
         }
         else 
         {

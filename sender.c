@@ -281,13 +281,10 @@ void handle_input_cmds(Sender * sender,
         free(ll_input_cmd_node);
             
 
-        //DUMMY CODE: Add the raw char buf to the outgoing_frames list
-        //NOTE: You should not blindly send this message out!
         //      Ask yourself: Is this message actually going to the right receiver (recall that default behavior of send is to broadcast to all receivers)?
         //                    Does the receiver have enough space in in it's input queue to handle this message?
         //                    Were the previous messages sent to this receiver ACTUALLY delivered to the receiver?
         int msg_length = strlen(outgoing_cmd->message);
-        //if (msg_length > MAX_FRAME_SIZE)
         if (msg_length > FRAME_PAYLOAD_SIZE)
         {
             //Do something about messages that exceed the frame size
@@ -300,6 +297,7 @@ void handle_input_cmds(Sender * sender,
             struct sendQ_slot *slot;
             //This is probably ONLY one step you want
             Frame * outgoing_frame = (Frame *) malloc (sizeof(Frame));
+            memset(outgoing_frame, 0, sizeof(Frame));
             strcpy(outgoing_frame->data, outgoing_cmd->message);
             outgoing_frame->src_id = outgoing_cmd->src_id;
             outgoing_frame->dst_id = outgoing_cmd->dst_id;
