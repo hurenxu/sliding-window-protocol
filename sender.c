@@ -262,6 +262,7 @@ void handle_input_cmds(Sender * sender,
   int sendFrames = 0;
   while (input_cmd_length > 0)
   {
+    //    1) Dequeue the ACK from the sender->input_framelist_head
     // break the loop if the buffer is full
     if(sender->inputFrameSize > BUFFER_SIZE) 
     {
@@ -316,7 +317,7 @@ void handle_input_cmds(Sender * sender,
       sendFrames++;
       //sender->inputFrameSize = sendFrames;
       sender->inputFrameSize++;
-      if(sendFrames <= RWS) {
+      //if(sendFrames <= RWS) {
         sender->sendArr[recv_id].LFS = sender->sendArr[recv_id].LFS + 1;
         // TODO: Wrap Around
         if(sender->sendArr[recv_id].LFS >= BUFFER_SIZE) 
@@ -327,7 +328,27 @@ void handle_input_cmds(Sender * sender,
         }
         ll_append_node(outgoing_frames_head_ptr,
             outgoing_charbuf);
-      }
+        //      }
+if((sender->sendArr[recv_id].LAR > BUFFER_SIZE) && (sender->sendArr[recv_id].LFS > BUFFER_SIZE)) 
+        {
+        }
+        else if(sender->sendArr[recv_id].LAR > sender->sendArr[recv_id].LFS) 
+        {
+          int rsw = BUFFER_SIZE + sender->sendArr[recv_id].LFS - sender->sendArr[recv_id].LAR;
+          if(rsw >= RWS) 
+          {
+            break;
+          }
+        }
+        else 
+        {
+          int rsw = sender->sendArr[recv_id].LFS - sender->sendArr[recv_id].LAR;
+          if(rsw >= RWS) 
+          {
+            break;
+          }
+        }
+
       free(outgoing_cmd->message);
       free(outgoing_cmd);
     }
@@ -340,6 +361,7 @@ void handle_timedout_frames(Sender * sender,
   int i;
   for(i = 0; i < RECEIVER_SIZE; i++) 
   {
+  
     // this is the send array with the sendQ inside
     uint8_t LAR = sender->sendArr[i].LAR;
     uint8_t LFS = sender->sendArr[i].LFS;
@@ -347,7 +369,8 @@ void handle_timedout_frames(Sender * sender,
     // this means all the send data has its acknoledgement
     if(LAR == LFS) 
     {
-      continue;
+      //continue;
+      return;
     }
 
     if(LFS > MAX_FRAME_SIZE) 
@@ -355,18 +378,19 @@ void handle_timedout_frames(Sender * sender,
       continue;
     }
     int j;
+    struct timeval * currtime = malloc(sizeof(struct timeval));
+    gettimeofday(currtime, NULL);
     for(j = LAR + 1; j != LFS + 1; j++) 
     {
       if(j >= BUFFER_SIZE) 
       {
         j = j % BUFFER_SIZE; 
       }
-      struct timeval * currtime = malloc(sizeof(struct timeval));
-      gettimeofday(currtime, NULL);
 
       long diff = timeval_usecdiff(currtime, sender->sendArr[i].sendQ[j % BUFFER_SIZE].timeout);
       // since the diff is currtime - timeout, so if the diff is either 0 or
       // greater than zero(currtime is later than timeout)
+
       if (diff <= 0) 
       {
         //This is probably ONLY one step you want

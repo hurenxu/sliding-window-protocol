@@ -3,17 +3,14 @@
 char get_bit (char byte, int pos) 
 {
   // return a char with a value of 0 or 1 depending on whether the bit in the pos is 0 or 1
-  char result;
   char tmp = byte >> pos;
-  //if ((byte & 0x80) == 0) 
   if ((tmp & 0x01) == 0) 
   {
-    result = 0;
+    return 0;
   }
   else {
-    result = 1;
+    return 1;
   }
-  return result;
 }
 
 // Function returns the remainder from a CRC calculation on a char* array of length byte_len 
@@ -59,7 +56,7 @@ int is_corrupted (char* array, int array_len)
 {
   // return 1 if a frame is corrupted, otherwise return 0
   char crc = crc8(array, array_len);
-  if(crc == 0x00) 
+  if(crc == 0) 
   {
     // means no error
     return 0;

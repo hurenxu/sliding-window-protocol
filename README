@@ -28,6 +28,64 @@ manipulate.
 If I am having corrupted incoming ack, my timeout will figure out and then 
 send back the frame, if received before, the receiver will ignore it.
 
+Start from the first file sender.c:
+I set all the sender's sequence number and last ack received and last frame sent
+to be -1. The reason for that is because when there is no incoming frame, the 
+number should not be around 0~15 which is the buffer size.
+
+calculate_timeout function is used to calculate the timeout with the paramter.
+
+The way that I am using for handle_incoming_acks is first check the possible 
+size that left in window can slide which is calculating with the total frame size
+- (LFS - LAR). Then I calculate the ack received number by using the ackNum that
+pass from the receiver - the sender's last ack received. Then set the Last Ack
+received = the ack number.
+
+if((previousLAR <= sender->sendArr[recv_id].LFS) && (ackNo > previousLAR) && 
+(ackNo <= sender->sendArr[recv_id].LFS)) 
+this is the logic that I am using for checking the previous window, and check
+if the sequence number that I received is inside the window, if it is inside
+the window. Then the total frame size - 1. 
+
+else if((previousLAR > sender->sendArr[recv_id].LFS) && ((ackNo > previousLAR) 
+|| (ackNo <= sender->sendArr[recv_id].LFS))) 
+This is the logic that I am using for chekcing the precious window at the 
+wrap around case.
+if the sequence number that I received is inside the window, if it is inside
+the window. Then the total frame size - 1. 
+
+Then is the sliding window part. So I am using the offset which equals to 
+LFS - LAR. However, since I mentioned before, there is a variable called 
+possible, which means possible frame left to send. So if the offset is 
+greater than the possible. Then just let the offset = possible.
+After that, let LFS equals to LFS + offset.
+
+Then slide the window, and send back the sequence that is greater than
+the current LFS and less than the LAR. If LFS == LAR, which means all
+the frame has been received.
+
+Handle_input_cmds first I split the message if it is longer than the frame size.
+Then pop the cmd and change them to frame. I checked the window size at the end
+since the number of message sent to the receiver cannot be greater than the 
+receiver remaining windows.
+
+Check_timeout is just checking if the time is less than the current time, then
+it is timeout so I just send it back to receiver, if receiver has already received
+then just ignore it.
+
+
+Now is the receiver.c
+First set all the slot to be not received, and set the window variable NFE, LFR
+, and LAF. Set NFE to be 0, and others to be -1 since they should be less than 0
+
+Handle incoming msgs are similr to handle incoming ack. The only difference is 
+that, the receiver will update the ackNum differently. 
+
+First check if the seq number equal to NFE, if it is not, means it is error, so
+save the incoming msg and send back the LFR as the ack number.
+If there is no error, then store and then send back the current seqNum.
+Then send back the acknoledgement.
+
 Frame:
 My frame is in total 64 bytes, with 7 bytes encapsulated header, and 57 bytes 
 data.
