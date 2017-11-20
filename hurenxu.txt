@@ -1,0 +1,23 @@
+Late days: 0
+Test case 1: Sending 1 packet and expecting receiver to print it out. (trivial): 1
+Test case 2: Corrupt a single byte in each packet, corrupt each byte in the packet once. (run 63 times): 63
+Test case 3: Corrupt matching bits in 2 bytes in the packet, the corruption occurs 4 bytes apart. (run 59 combinations): 59
+Test case 4: Receiver drop packet once, expect retransmission within 0.09 - 0.11s window.: 1
+Test case 5: Hold ACK for 0.085s, expect no retransmission from the sender: 1
+Test case 6: Sends out a 11-character frame to receiver_0, check that receivers drop packets not intended for them.: 1
+Test case 7: Sends out a 100-character message, check fragmentation is implemented to split the message into frames.: 1
+Test case 8: Sends out an 80-character message, send out the 2nd frame 0.05s before the 1st frame, expecting the receiver to print the frames according to the logical order: 1
+Test case 9: Drop ACK once, expect retransmission happens only once: 1
+Test case 10: Sending 20 packets and expecting receiver to print them out in order with no more than 8 frames outstanding at any time.: 0
+Test case 11: Sending 20 packets (with corrupt probability of 20%) and expecting receiver to print them out in order.: 1
+Test case 12: Sending 20 packets (with corrupt probability of 40%) and expecting receiver to print them out in order.: 1
+Test case 13: Sending 20 packets (with corrupt probability of 20% and drop probability of 20%) and expecting receiver to print them out in order.: 1
+Test case 14: Sending 20 packets (with corrupt probability of 40% and drop probability of 20%) and expecting receiver to print them out in order.: 1
+Test case 15: Sending 20 packets (with corrupt probability of 40% and drop probability of 40%) and expecting receiver to print them out in order.: 1
+Test case 16: Sending 20 packets (drop probability of 20%) and expecting receiver to print them out in order.: 1
+Test case 17: Sending 20 packets (drop probability of 40%) and expecting receiver to print them out in order.: 1
+Test case 18: Sending 255 packets indexed from 1 to 255, expecting receiver to print them out in order: 1
+Test case 19: Out of order ACK packet arrival for long message, sends out a 640-character message, hold the first 8 ACKs for 0.01s. Expect the output to resemble the message according to the logical order of the frames, while no more than 8 frames are outstanding at any time: 1
+Test case 20: Out of order ACK packet arrival for short and long messages, sends out a 11-character message followed by a 640-character message. Hold the first 20 ACKs for 0.01s, expect the output to print the messages according to the logical order, while no more than 8 frames are outstanding at any time: 1
+Test case 21: Multi-user test case no drops or corruption. Initialize 5 senders and 5 receivers, each sender sends a frame to each receiver, expect the receivers to print out frames intended for them: 1.0
+Grade: 103/110
